@@ -1,0 +1,322 @@
+[
+  {
+    "name": "dnsexit",
+    "package": "github.com/libdns/dnsexit",
+    "description": ""
+  },
+  {
+    "name": "rfc2136",
+    "package": "github.com/libdns/rfc2136",
+    "description": ""
+  },
+  {
+    "name": "inwx",
+    "package": "github.com/libdns/inwx",
+    "description": ""
+  },
+  {
+    "name": "katapult",
+    "package": "github.com/libdns/katapult",
+    "description": ""
+  },
+  {
+    "name": "autodns",
+    "package": "github.com/libdns/autodns",
+    "description": ""
+  },
+  {
+    "name": "huaweicloud",
+    "package": "github.com/libdns/huaweicloud",
+    "description": ""
+  },
+  {
+    "name": "hosttech",
+    "package": "github.com/libdns/hosttech",
+    "description": ""
+  },
+  {
+    "name": "he",
+    "package": "github.com/libdns/he",
+    "description": ""
+  },
+  {
+    "name": "dnsmadeeasy",
+    "package": "github.com/libdns/dnsmadeeasy",
+    "description": ""
+  },
+  {
+    "name": "tencentcloud",
+    "package": "github.com/libdns/tencentcloud",
+    "description": ""
+  },
+  {
+    "name": "namedotcom",
+    "package": "github.com/libdns/namedotcom",
+    "description": ""
+  },
+  {
+    "name": "leaseweb",
+    "package": "github.com/libdns/leaseweb",
+    "description": ""
+  },
+  {
+    "name": "porkbun",
+    "package": "github.com/libdns/porkbun",
+    "description": ""
+  },
+  {
+    "name": "dreamhost",
+    "package": "github.com/libdns/dreamhost",
+    "description": ""
+  },
+  {
+    "name": "timeweb",
+    "package": "github.com/libdns/timeweb",
+    "description": ""
+  },
+  {
+    "name": "exoscale",
+    "package": "github.com/libdns/exoscale",
+    "description": ""
+  },
+  {
+    "name": "route53",
+    "package": "github.com/libdns/route53",
+    "description": ""
+  },
+  {
+    "name": "selectel",
+    "package": "github.com/libdns/selectel",
+    "description": ""
+  },
+  {
+    "name": "ovh",
+    "package": "github.com/libdns/ovh",
+    "description": ""
+  },
+  {
+    "name": "powerdns",
+    "package": "github.com/libdns/powerdns",
+    "description": ""
+  },
+  {
+    "name": "hetzner",
+    "package": "github.com/libdns/hetzner",
+    "description": ""
+  },
+  {
+    "name": "ionos",
+    "package": "github.com/libdns/ionos",
+    "description": ""
+  },
+  {
+    "name": "luadns",
+    "package": "github.com/libdns/luadns",
+    "description": ""
+  },
+  {
+    "name": "dynu",
+    "package": "github.com/libdns/dynu",
+    "description": ""
+  },
+  {
+    "name": "easydns",
+    "package": "github.com/libdns/easydns",
+    "description": ""
+  },
+  {
+    "name": "glesys",
+    "package": "github.com/libdns/glesys",
+    "description": ""
+  },
+  {
+    "name": "acmeproxy",
+    "package": "github.com/libdns/acmeproxy",
+    "description": ""
+  },
+  {
+    "name": "transip",
+    "package": "github.com/libdns/transip",
+    "description": ""
+  },
+  {
+    "name": "directadmin",
+    "package": "github.com/libdns/directadmin",
+    "description": ""
+  },
+  {
+    "name": "netcup",
+    "package": "github.com/libdns/netcup",
+    "description": ""
+  },
+  {
+    "name": "cloudflare",
+    "package": "github.com/libdns/cloudflare",
+    "description": ""
+  },
+  {
+    "name": "infomaniak",
+    "package": "github.com/libdns/infomaniak",
+    "description": ""
+  },
+  {
+    "name": "desec",
+    "package": "github.com/libdns/desec",
+    "description": ""
+  },
+  {
+    "name": "dnsimple",
+    "package": "github.com/libdns/dnsimple",
+    "description": ""
+  },
+  {
+    "name": "netlify",
+    "package": "github.com/libdns/netlify",
+    "description": ""
+  },
+  {
+    "name": "nfsn",
+    "package": "github.com/libdns/nfsn",
+    "description": ""
+  },
+  {
+    "name": "namesilo",
+    "package": "github.com/libdns/namesilo",
+    "description": ""
+  },
+  {
+    "name": "azure",
+    "package": "github.com/libdns/azure",
+    "description": ""
+  },
+  {
+    "name": "linode",
+    "package": "github.com/libdns/linode",
+    "description": ""
+  },
+  {
+    "name": "civo",
+    "package": "github.com/libdns/civo",
+    "description": ""
+  },
+  {
+    "name": "scaleway",
+    "package": "github.com/libdns/scaleway",
+    "description": ""
+  },
+  {
+    "name": "bunny",
+    "package": "github.com/libdns/bunny",
+    "description": ""
+  },
+  {
+    "name": "gandi",
+    "package": "github.com/libdns/gandi",
+    "description": ""
+  },
+  {
+    "name": "dnsupdate",
+    "package": "github.com/libdns/dnsupdate",
+    "description": ""
+  },
+  {
+    "name": "loopia",
+    "package": "github.com/libdns/loopia",
+    "description": ""
+  },
+  {
+    "name": "mailinabox",
+    "package": "github.com/libdns/mailinabox",
+    "description": ""
+  },
+  {
+    "name": "hexonet",
+    "package": "github.com/libdns/hexonet",
+    "description": ""
+  },
+  {
+    "name": "digitalocean",
+    "package": "github.com/libdns/digitalocean",
+    "description": ""
+  },
+  {
+    "name": "alidns",
+    "package": "github.com/libdns/alidns",
+    "description": ""
+  },
+  {
+    "name": "duckdns",
+    "package": "github.com/libdns/duckdns",
+    "description": ""
+  },
+  {
+    "name": "vultr",
+    "package": "github.com/libdns/vultr",
+    "description": ""
+  },
+  {
+    "name": "godaddy",
+    "package": "github.com/libdns/godaddy",
+    "description": ""
+  },
+  {
+    "name": "njalla",
+    "package": "github.com/libdns/njalla",
+    "description": ""
+  },
+  {
+    "name": "totaluptime",
+    "package": "github.com/libdns/totaluptime",
+    "description": ""
+  },
+  {
+    "name": "ddnss",
+    "package": "github.com/libdns/ddnss",
+    "description": ""
+  },
+  {
+    "name": "vercel",
+    "package": "github.com/libdns/vercel",
+    "description": ""
+  },
+  {
+    "name": "googleclouddns",
+    "package": "github.com/libdns/googleclouddns",
+    "description": ""
+  },
+  {
+    "name": "dinahosting",
+    "package": "github.com/libdns/dinahosting",
+    "description": ""
+  },
+  {
+    "name": "mythicbeasts",
+    "package": "github.com/libdns/mythicbeasts",
+    "description": ""
+  },
+  {
+    "name": "dynv6",
+    "package": "github.com/libdns/dynv6",
+    "description": ""
+  },
+  {
+    "name": "namecheap",
+    "package": "github.com/libdns/namecheap",
+    "description": ""
+  },
+  {
+    "name": "dnspod",
+    "package": "github.com/libdns/dnspod",
+    "description": ""
+  },
+  {
+    "name": "metaname",
+    "package": "github.com/libdns/metaname",
+    "description": ""
+  },
+  {
+    "name": "openstackdesignate",
+    "package": "github.com/libdns/openstack-designate",
+    "description": ""
+  }
+]
