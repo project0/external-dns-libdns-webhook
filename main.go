@@ -17,6 +17,8 @@ import (
 
 const (
 	ENV_PREFIX                 = "WEBHOOK_LIBDNS_"
+	flag_log_level             = "log-level"
+	flag_log_format            = "log-format"
 	flag_provider_name         = "provider-name"
 	flag_provider_config       = "provider-config"
 	flag_provider_config_file  = "provider-config-file"
@@ -46,6 +48,30 @@ func main() {
 		Usage: "Webhook for external-dns using libdns providers. Supported provider names: " + strings.Join(providerList(), ", "),
 
 		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    flag_log_level,
+				Usage:   "The log level (trace, debug, info, warn, error, fatal, panic)",
+				Value:   "info",
+				Sources: cli.EnvVars(flagEnv(flag_log_level)),
+				Validator: func(s string) error {
+					if _, err := log.ParseLevel(s); err != nil {
+						return err
+					}
+					return nil
+				},
+			},
+			&cli.StringFlag{
+				Name:    flag_log_format,
+				Usage:   "The log format (text, json)",
+				Value:   "text",
+				Sources: cli.EnvVars(flagEnv(flag_log_format)),
+				Validator: func(s string) error {
+					if s != "text" && s != "json" {
+						return fmt.Errorf("log format must be text or json")
+					}
+					return nil
+				},
+			},
 			&cli.StringFlag{
 				Name:     flag_provider_name,
 				Aliases:  []string{"n"},
@@ -104,7 +130,18 @@ func main() {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			logger := log.New()
+			if cmd.String(flag_log_format) == "json" {
+				log.SetFormatter(&log.JSONFormatter{})
+			} else {
+				log.SetFormatter(&log.TextFormatter{})
+			}
+
+			level, err := log.ParseLevel(cmd.String(flag_log_level))
+			if err != nil {
+				return fmt.Errorf("failed to parse log level: %w", err)
+			}
+			log.Info("Setting log level to ", level)
+			log.SetLevel(level)
 
 			confs := [][]byte{}
 			if conf := cmd.String(flag_provider_config); conf != "" {
@@ -112,6 +149,7 @@ func main() {
 			}
 
 			for _, file := range cmd.StringSlice(flag_provider_config_file) {
+				log.Info("Reading provider config from file ", file)
 				confFileBytes, err := os.ReadFile(file)
 				if err != nil {
 					return fmt.Errorf("failed to read file %s: %w", file, err)
@@ -129,7 +167,7 @@ func main() {
 				return fmt.Errorf("failed to create provider %s: %w", providerName, err)
 			}
 
-			externaldnsProvider := webhook.NewWebhookProvider(cmd.StringSlice(flag_zones), provider, logger)
+			externaldnsProvider := webhook.NewWebhookProvider(cmd.StringSlice(flag_zones), provider)
 			webhook.Run(
 				externaldnsProvider,
 				cmd.String(flag_webhook_listen),

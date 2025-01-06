@@ -22,7 +22,7 @@ func Run(provider provider.Provider, serveaddr string, serveaddrMetrics string, 
 }
 
 func okHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("ok"))
+	http.Error(w, "ok", http.StatusOK)
 }
 
 func RunMetrics(serveaddr string) {

@@ -17,12 +17,6 @@ const (
 	identifierLabelPriority = "priority"
 )
 
-// small wrapper to keep track of the zone of a record
-type libdnsZoneRecord struct {
-	record libdns.Record
-	zone   string
-}
-
 // relativeName returns the name part of a DNS name in a zone.
 func relativeName(name, zone string) string {
 	return libdns.RelativeName(name, zone)
@@ -63,8 +57,8 @@ func toExternalDNSEndpoint(record libdns.Record, zone string) (*endpoint.Endpoin
 		SetIdentifier:    record.ID,
 		ProviderSpecific: []endpoint.ProviderSpecificProperty{},
 	}
-	endpoint.WithProviderSpecific(identifierLabelWeight, string(record.Weight))
-	endpoint.WithProviderSpecific(identifierLabelPriority, string(record.Priority))
+	endpoint.WithProviderSpecific(identifierLabelWeight, fmt.Sprint(record.Weight))
+	endpoint.WithProviderSpecific(identifierLabelPriority, fmt.Sprint(record.Priority))
 	return endpoint, nil
 }
 
