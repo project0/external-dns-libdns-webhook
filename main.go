@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/project0/external-dns-libdns-webhook/internal/libdnsregistry"
+	"github.com/project0/external-dns-libdns-webhook/internal/provider"
+	"github.com/project0/external-dns-libdns-webhook/internal/webhook"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v3"
@@ -66,7 +68,6 @@ func main() {
 		Version:     version,
 		Usage:       "Webhook for external-dns using libdns providers.",
 		Description: fmt.Sprintf(description, strings.Join(libdnsregistry.List(), ", "), version, commit, date),
-
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    flagLogLevel,
@@ -165,21 +166,20 @@ func main() {
 			}
 
 			providerName := cmd.String(flagProviderName)
-
-			_, err := libdnsregistry.New(providerName, confs)
+			libdnsProvider, err := libdnsregistry.New(providerName, confs)
 			if err != nil {
 				return fmt.Errorf("failed to create provider %s: %w", providerName, err)
 			}
 
-			// externaldnsProvider := webhook.NewWebhookProvider(cmd.StringSlice(flag_zones), provider)
-			// webhook.Run(
-			// 	externaldnsProvider,
-			// 	cmd.String(flag_webhook_listen),
-			// 	cmd.String(flag_metrics_listen),
-			// 	cmd.Duration(flag_webhook_read_timeout),
-			// 	cmd.Duration(flag_webhook_write_timeout),
-			// )
-			return nil
+			server := webhook.New(
+				provider.New(cmd.StringSlice(flagProviderZones), libdnsProvider),
+				cmd.String(flagWebhookListen),
+				cmd.Duration(flagWebhookReadTimeout),
+				cmd.Duration(flagWebhookWriteTimeout),
+			)
+
+			//nolint:contextcheck
+			return server.Serve()
 		},
 	}
 

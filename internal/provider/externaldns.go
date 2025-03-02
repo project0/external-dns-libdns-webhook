@@ -17,7 +17,7 @@ type WebhookProvider struct {
 	cachedZonesRecords map[string][]libdns.Record
 }
 
-func NewWebhookProvider(zones []string, libdnsProvider libdnsregistry.Provider) *WebhookProvider {
+func New(zones []string, libdnsProvider libdnsregistry.Provider) *WebhookProvider {
 	return &WebhookProvider{
 		zones:              zones,
 		libdnsProvider:     libdnsProvider,
@@ -25,28 +25,30 @@ func NewWebhookProvider(zones []string, libdnsProvider libdnsregistry.Provider) 
 	}
 }
 
-func (p *WebhookProvider) Records(ctx context.Context) ([]*externaldns.Endpoint, error) {
+func (p *WebhookProvider) Records(ctx context.Context) (externaldns.Endpoints, error) {
 	endpoints := []*externaldns.Endpoint{}
 
 	// return all records for configured zones
 	for _, zone := range p.zones {
-		logger := log.With().Str("zone", zone).Ctx(ctx).Logger()
-
-		logger.Debug().Msg("Getting records for zone")
+		logger := log.Ctx(ctx).With().Str("zone", zone).Logger()
+		logger.Debug().Msg("Retrieving records for zone")
 
 		records, err := p.libdnsProvider.GetRecords(ctx, zone)
-		// as there is no real concurrent sync in progress we can cache between the calls to avoid calling api too many times
-		p.cachedZonesRecords[zone] = records
-
 		if err != nil {
 			logger.Err(err).Msg("Failed to retrieve records for zone")
 
 			return nil, fmt.Errorf("failed to retrieve records for zone: %w", err)
 		}
 
+		// as there is no real concurrent sync in progress we can cache between the calls to avoid calling api too many times
+		p.cachedZonesRecords[zone] = records
+
 		for _, record := range records {
 			endpoint := toExternalDNSEndpoint(record, zone)
-			logger.Trace().Any("record", record).Any("endpoint", endpoint).Msg("Record converted to endpoint")
+			logger.Trace().
+				Any("record", record).
+				Any("endpoint", endpoint).
+				Msg("Record converted to endpoint")
 
 			endpoints = append(endpoints, endpoint)
 		}
@@ -56,8 +58,7 @@ func (p *WebhookProvider) Records(ctx context.Context) ([]*externaldns.Endpoint,
 }
 
 func (p *WebhookProvider) ApplyChanges(ctx context.Context, changes *externaldns.Changes) error {
-	logger := log.Ctx(ctx)
-	logger.Debug().
+	log.Ctx(ctx).Debug().
 		Any("changes_create", changes.Create).
 		Msg("Convet creation change endpoints to records")
 
@@ -66,7 +67,7 @@ func (p *WebhookProvider) ApplyChanges(ctx context.Context, changes *externaldns
 		return err
 	}
 
-	logger.Debug().
+	log.Ctx(ctx).Debug().
 		Any("changes_delete", changes.Delete).
 		Msg("Convert deletion change endpoints to records")
 
@@ -75,7 +76,7 @@ func (p *WebhookProvider) ApplyChanges(ctx context.Context, changes *externaldns
 		return err
 	}
 
-	logger.Debug().
+	log.Ctx(ctx).Debug().
 		Any("changes_update_new", changes.UpdateNew).
 		Any("changes_update_old", changes.UpdateOld).
 		Msg("Convert updates change endpoints to records")
@@ -87,7 +88,7 @@ func (p *WebhookProvider) ApplyChanges(ctx context.Context, changes *externaldns
 
 	if len(creates) > 0 {
 		for zone, records := range creates {
-			logger.Info().
+			log.Ctx(ctx).Info().
 				Any("records", records).
 				Any("zone", zone).
 				Msg("Creating records")
@@ -101,7 +102,7 @@ func (p *WebhookProvider) ApplyChanges(ctx context.Context, changes *externaldns
 
 	if len(deletes) > 0 {
 		for zone, records := range deletes {
-			logger.Info().
+			log.Ctx(ctx).Info().
 				Any("records", records).
 				Any("zone", zone).
 				Msg("Deleting records")
@@ -115,7 +116,7 @@ func (p *WebhookProvider) ApplyChanges(ctx context.Context, changes *externaldns
 
 	if len(updates) > 0 {
 		for zone, records := range updates {
-			logger.Info().
+			log.Ctx(ctx).Info().
 				Any("records", records).
 				Any("zone", zone).
 				Msg("Updating records")
@@ -130,9 +131,7 @@ func (p *WebhookProvider) ApplyChanges(ctx context.Context, changes *externaldns
 	return nil
 }
 
-func (p *WebhookProvider) AdjustEndpoints(ctx context.Context, endpoints []*externaldns.Endpoint) ([]*externaldns.Endpoint, error) {
-	logger := log.With().Ctx(ctx).Logger()
-
+func (p *WebhookProvider) AdjustEndpoints(ctx context.Context, endpoints externaldns.Endpoints) (externaldns.Endpoints, error) {
 	for _, endpoint := range endpoints {
 		// defaults
 		if _, exist := endpoint.GetProviderSpecificProperty(identifierLabelWeight); !exist {
@@ -158,7 +157,7 @@ func (p *WebhookProvider) AdjustEndpoints(ctx context.Context, endpoints []*exte
 					if cachedRecords, exist := p.cachedZonesRecords[zone]; exist {
 						for _, zoneRecord := range cachedRecords {
 							if record.Name == zoneRecord.Name && record.Type == zoneRecord.Type {
-								logger.Debug().
+								log.Ctx(ctx).Debug().
 									Any("record", record).
 									Any("record_zone", zoneRecord).
 									Msg("Set record ID for endpoint")

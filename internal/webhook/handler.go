@@ -13,24 +13,22 @@ const (
 	contentTypeHeader         = "Content-Type"
 )
 
-type Handler struct {
-	Provider externaldns.Provider
-}
-
-func (h *Handler) NegotiateHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) NegotiateHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
 
-	if err := json.NewEncoder(w).Encode(h.Provider.GetInitialization(r.Context())); err != nil {
+	if err := json.NewEncoder(w).Encode(s.provider.GetInitialization(r.Context())); err != nil {
+		log.Ctx(r.Context()).Err(err).Msg("Failed to encode negotiate response")
+
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-func (h *Handler) RecordsHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) RecordsHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		records, err := h.Provider.Records(r.Context())
+		records, err := s.provider.Records(r.Context())
 		if err != nil {
-			log.Err(err).Msg("Failed to get Records")
+			log.Ctx(r.Context()).Err(err).Msg("Failed to get records")
 			w.WriteHeader(http.StatusInternalServerError)
 
 			return
@@ -40,22 +38,22 @@ func (h *Handler) RecordsHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 
 		if err := json.NewEncoder(w).Encode(records); err != nil {
-			log.Err(err).Msg("Failed to encode records")
+			log.Ctx(r.Context()).Err(err).Msg("Failed to encode records")
 		}
 
 		return
 	case http.MethodPost:
 		var changes externaldns.Changes
 		if err := json.NewDecoder(r.Body).Decode(&changes); err != nil {
-			log.Err(err).Msg("Failed to decode changes")
+			log.Ctx(r.Context()).Err(err).Msg("Failed to decode changes")
 			w.WriteHeader(http.StatusBadRequest)
 
 			return
 		}
 
-		err := h.Provider.ApplyChanges(r.Context(), &changes)
+		err := s.provider.ApplyChanges(r.Context(), &changes)
 		if err != nil {
-			log.Err(err).Msg("Failed to apply changes")
+			log.Ctx(r.Context()).Err(err).Msg("Failed to apply changes")
 			w.WriteHeader(http.StatusInternalServerError)
 
 			return
@@ -65,14 +63,14 @@ func (h *Handler) RecordsHandler(w http.ResponseWriter, r *http.Request) {
 
 		return
 	default:
-		log.Error().Str("method", r.Method).Msg("Unsupported method")
+		log.Ctx(r.Context()).Error().Msg("Unsupported method")
 		w.WriteHeader(http.StatusBadRequest)
 	}
 }
 
-func (h *Handler) AdjustendpointsHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) AdjustendpointsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		log.Error().Str("method", r.Method).Msg("Unsupported method")
+		log.Ctx(r.Context()).Error().Msg("Unsupported method")
 		w.WriteHeader(http.StatusBadRequest)
 
 		return
@@ -80,7 +78,7 @@ func (h *Handler) AdjustendpointsHandler(w http.ResponseWriter, r *http.Request)
 
 	pve := make(externaldns.Endpoints, 0)
 	if err := json.NewDecoder(r.Body).Decode(&pve); err != nil {
-		log.Err(err).Msg("Failed to decode in adjustEndpointsHandler")
+		log.Ctx(r.Context()).Err(err).Msg("Failed to decode in adjustEndpointsHandler")
 		w.WriteHeader(http.StatusBadRequest)
 
 		return
@@ -88,14 +86,14 @@ func (h *Handler) AdjustendpointsHandler(w http.ResponseWriter, r *http.Request)
 
 	w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
 
-	pve, err := h.Provider.AdjustEndpoints(r.Context(), pve)
+	pve, err := s.provider.AdjustEndpoints(r.Context(), pve)
 	if err != nil {
-		log.Err(err).Msg("Failed to call adjust endpoints")
+		log.Ctx(r.Context()).Err(err).Msg("Failed to call adjust endpoints")
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
 	if err := json.NewEncoder(w).Encode(&pve); err != nil {
-		log.Err(err).Msg("Failed to encode in adjustEndpointsHandler")
+		log.Ctx(r.Context()).Err(err).Msg("Failed to encode in adjustEndpointsHandler")
 		w.WriteHeader(http.StatusInternalServerError)
 
 		return

@@ -9,9 +9,9 @@ import (
 )
 
 const (
-	registryTemplate = `package libdnsregistry
+	registryTemplate = `// This file is auto generated, DO NOT EDIT.
+package libdnsregistry
 
-// This file is auto generated, do not modify directly
 import (
 	{{- range .}}
 	libdns{{.Name}} "{{.Package}}"
@@ -24,8 +24,13 @@ var registry = RegistryStore{
 		Init: func(conf [][]byte) (Provider, error) {
 			return initProvider[libdns{{.Name}}.Provider](conf)
 		},
-		URL: "{{ .URL }}",
-		Description: "{{ .Description }}",
+		Docs: func() RegistryProviderDocs {
+			return RegistryProviderDocs{
+				URL: "{{ .URL }}",
+				Description: "{{ .Description }}",
+				Configuration: configurationDetails[libdns{{.Name}}.Provider](),
+			}
+		},
 	},
 	{{- end}}
 }

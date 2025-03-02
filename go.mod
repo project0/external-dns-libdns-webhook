@@ -9,7 +9,6 @@ require (
 )
 
 require (
-	github.com/libdns/acmeproxy v0.0.0-20240622122018-d329e1aa0fc9
 	github.com/libdns/alidns v1.0.3
 	github.com/libdns/autodns v0.0.0-20250217093418-afbefb5b548d
 	github.com/libdns/bunny v1.3.2

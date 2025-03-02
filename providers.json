@@ -102,12 +102,6 @@
     "url": "https://www.easydns.com/"
   },
   {
-    "name": "acmeproxy",
-    "package": "github.com/libdns/acmeproxy",
-    "description": "ACME Proxy is a DNS-01 challenge proxy for ACME clients.",
-    "url": "https://github.com/libdns/acmeproxy"
-  },
-  {
     "name": "transip",
     "package": "github.com/libdns/transip",
     "description": "TransIP provides web hosting and domain services.",
