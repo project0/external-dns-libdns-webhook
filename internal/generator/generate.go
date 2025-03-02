@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	registryTemplate = `package libdns
+	registryTemplate = `package libdnsregistry
 
 // This file is auto generated, do not modify directly
 import (
@@ -18,20 +18,25 @@ import (
 	{{- end}}
 )
 
-var Registry = map[string]func(conf [][]byte) (LibdnsProvider, error) {
+var registry = RegistryStore{
 	{{- range .}}
-	"{{.Name}}": func(conf [][]byte) (LibdnsProvider, error) {
-		return initProvider[libdns{{.Name}}.Provider](conf)
+	"{{.Name}}": &RegistryProvider{
+		Init: func(conf [][]byte) (Provider, error) {
+			return initProvider[libdns{{.Name}}.Provider](conf)
+		},
+		URL: "{{ .URL }}",
+		Description: "{{ .Description }}",
 	},
 	{{- end}}
 }
 `
 )
 
-type provderSource struct {
+type providerSource struct {
 	Name        string `json:"name"`
 	Package     string `json:"package"`
 	Description string `json:"description,omitempty"`
+	URL         string `json:"url,omitempty"`
 }
 
 func main() {
@@ -40,19 +45,19 @@ func main() {
 		panic("Usage: go run generate code <json path> <output path>")
 	}
 
-	providers := new([]provderSource)
-	listJson, err := os.ReadFile(args[1])
+	providers := new([]providerSource)
+
+	listJSON, err := os.ReadFile(args[1])
 	if err != nil {
 		panic(err)
 	}
 
-	err = json.Unmarshal(listJson, providers)
+	err = json.Unmarshal(listJSON, providers)
 	if err != nil {
 		panic(err)
 	}
 
 	switch args[0] {
-
 	case "code":
 		generateCode(args[2], *providers)
 
@@ -61,8 +66,7 @@ func main() {
 	}
 }
 
-func generateCode(path string, providers []provderSource) {
-
+func generateCode(path string, providers []providerSource) {
 	registryTpl, err := template.New("libdns").Parse(registryTemplate)
 	if err != nil {
 		panic(err)
@@ -72,11 +76,14 @@ func generateCode(path string, providers []provderSource) {
 	if err := registryTpl.Execute(content, providers); err != nil {
 		panic(err)
 	}
+
 	formattedContent, err := format.Source(content.Bytes())
 	if err != nil {
 		panic(err)
 	}
-	if err := os.WriteFile(path, formattedContent, 0644); err != nil {
+
+	//nolint:gosec,mnd
+	if err := os.WriteFile(path, formattedContent, 0o644); err != nil {
 		panic(err)
 	}
 }

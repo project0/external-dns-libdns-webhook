@@ -1,0 +1,47 @@
+linters:
+  # Disable all linters.
+  # Default: false
+  # disable-all: true
+  # Enable specific linter
+  # https://golangci-lint.run/usage/linters/#enabled-by-default
+  enable: []
+  disable:
+    - tagliatelle
+    - gochecknoglobals
+    - err113
+    - exhaustruct
+    - lll
+    - funlen
+    - depguard
+
+  # Enable presets.
+  # https://golangci-lint.run/usage/linters
+  # Default: []
+  presets:
+    - bugs
+    - comment
+    - error
+    - format
+    - import
+    - metalinter
+    - module
+    - performance
+    - sql
+    - style
+    - test
+    - unused
+
+linters-settings:
+  mnd:
+    # List of enabled checks, see https://github.com/tommy-muehle/go-mnd/#checks for description.
+    # Default: ["argument", "case", "condition", "operation", "return", "assign"]
+    checks:
+      - argument
+      - case
+      - operation
+      - return
+  varnamelen:
+    ignore-decls:
+      - w http.ResponseWriter
+      - r *http.Request
+      - t testing.T

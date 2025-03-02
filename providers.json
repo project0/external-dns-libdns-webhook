@@ -2,216 +2,259 @@
   {
     "name": "dnsexit",
     "package": "github.com/libdns/dnsexit",
-    "description": ""
+    "description": "DNSExit provides DNS hosting services.",
+    "url": "https://www.dnsexit.com/"
   },
   {
     "name": "rfc2136",
     "package": "github.com/libdns/rfc2136",
-    "description": ""
+    "description": "RFC2136 is a standard for dynamic DNS updates.",
+    "url": "https://tools.ietf.org/html/rfc2136"
   },
   {
     "name": "inwx",
     "package": "github.com/libdns/inwx",
-    "description": ""
+    "description": "INWX is a domain registrar and DNS hosting provider.",
+    "url": "https://www.inwx.com/"
   },
   {
     "name": "katapult",
     "package": "github.com/libdns/katapult",
-    "description": ""
+    "description": "Katapult provides cloud infrastructure services.",
+    "url": "https://katapult.io/"
   },
   {
     "name": "autodns",
     "package": "github.com/libdns/autodns",
-    "description": ""
+    "description": "AutoDNS is a DNS management service by InterNetX.",
+    "url": "https://www.internetx.com/"
   },
   {
     "name": "hosttech",
     "package": "github.com/libdns/hosttech",
-    "description": ""
+    "description": "Hosttech provides web hosting and domain services.",
+    "url": "https://www.hosttech.ch/"
   },
   {
     "name": "he",
     "package": "github.com/libdns/he",
-    "description": ""
+    "description": "Hurricane Electric provides DNS hosting services.",
+    "url": "https://dns.he.net/"
   },
   {
     "name": "dnsmadeeasy",
     "package": "github.com/libdns/dnsmadeeasy",
-    "description": ""
+    "description": "DNS Made Easy provides enterprise DNS services.",
+    "url": "https://dnsmadeeasy.com/"
   },
   {
     "name": "namedotcom",
     "package": "github.com/libdns/namedotcom",
-    "description": ""
+    "description": "Name.com is a domain registrar and DNS hosting provider.",
+    "url": "https://www.name.com/"
   },
   {
     "name": "leaseweb",
     "package": "github.com/libdns/leaseweb",
-    "description": ""
+    "description": "Leaseweb provides cloud hosting and domain services.",
+    "url": "https://www.leaseweb.com/"
   },
   {
     "name": "porkbun",
     "package": "github.com/libdns/porkbun",
-    "description": ""
+    "description": "Porkbun is a domain registrar and DNS hosting provider.",
+    "url": "https://porkbun.com/"
   },
   {
     "name": "dreamhost",
     "package": "github.com/libdns/dreamhost",
-    "description": ""
+    "description": "DreamHost provides web hosting and domain services.",
+    "url": "https://www.dreamhost.com/"
   },
   {
     "name": "timeweb",
     "package": "github.com/libdns/timeweb",
-    "description": ""
+    "description": "Timeweb provides web hosting and domain services.",
+    "url": "https://timeweb.com/"
   },
   {
     "name": "selectel",
     "package": "github.com/libdns/selectel",
-    "description": ""
+    "description": "Selectel provides cloud infrastructure services.",
+    "url": "https://selectel.ru/en/"
   },
   {
     "name": "luadns",
     "package": "github.com/libdns/luadns",
-    "description": ""
+    "description": "LuaDNS provides DNS hosting services.",
+    "url": "https://www.luadns.com/"
   },
   {
     "name": "dynu",
     "package": "github.com/libdns/dynu",
-    "description": ""
+    "description": "Dynu provides dynamic DNS services.",
+    "url": "https://www.dynu.com/"
   },
   {
     "name": "easydns",
     "package": "github.com/libdns/easydns",
-    "description": ""
+    "description": "EasyDNS provides DNS hosting services.",
+    "url": "https://www.easydns.com/"
   },
   {
     "name": "acmeproxy",
     "package": "github.com/libdns/acmeproxy",
-    "description": ""
+    "description": "ACME Proxy is a DNS-01 challenge proxy for ACME clients.",
+    "url": "https://github.com/libdns/acmeproxy"
   },
   {
     "name": "transip",
     "package": "github.com/libdns/transip",
-    "description": ""
+    "description": "TransIP provides web hosting and domain services.",
+    "url": "https://www.transip.eu/"
   },
   {
     "name": "directadmin",
     "package": "github.com/libdns/directadmin",
-    "description": ""
+    "description": "DirectAdmin is a web hosting control panel.",
+    "url": "https://www.directadmin.com/"
   },
   {
     "name": "infomaniak",
     "package": "github.com/libdns/infomaniak",
-    "description": ""
+    "description": "Infomaniak provides web hosting and domain services.",
+    "url": "https://www.infomaniak.com/"
   },
   {
     "name": "desec",
     "package": "github.com/libdns/desec",
-    "description": ""
+    "description": "deSEC is a free DNS hosting service.",
+    "url": "https://desec.io/"
   },
   {
     "name": "dnsimple",
     "package": "github.com/libdns/dnsimple",
-    "description": ""
+    "description": "DNSimple provides DNS hosting services.",
+    "url": "https://dnsimple.com/"
   },
   {
     "name": "netlify",
     "package": "github.com/libdns/netlify",
-    "description": ""
+    "description": "Netlify provides web hosting and domain services.",
+    "url": "https://www.netlify.com/"
   },
   {
     "name": "nfsn",
     "package": "github.com/libdns/nfsn",
-    "description": ""
+    "description": "NearlyFreeSpeech.NET provides web hosting and domain services.",
+    "url": "https://www.nearlyfreespeech.net/"
   },
   {
     "name": "namesilo",
     "package": "github.com/libdns/namesilo",
-    "description": ""
+    "description": "NameSilo is a domain registrar and DNS hosting provider.",
+    "url": "https://www.namesilo.com/"
   },
   {
     "name": "bunny",
     "package": "github.com/libdns/bunny",
-    "description": ""
+    "description": "BunnyCDN provides content delivery network services.",
+    "url": "https://bunny.net/"
   },
   {
     "name": "dnsupdate",
     "package": "github.com/libdns/dnsupdate",
-    "description": ""
+    "description": "DNSUpdate provides dynamic DNS services.",
+    "url": "https://dnsupdate.org/"
   },
   {
     "name": "loopia",
     "package": "github.com/libdns/loopia",
-    "description": ""
+    "description": "Loopia provides web hosting and domain services.",
+    "url": "https://www.loopia.se/"
   },
   {
     "name": "mailinabox",
     "package": "github.com/libdns/mailinabox",
-    "description": ""
+    "description": "Mail-in-a-Box is an easy-to-deploy mail server.",
+    "url": "https://mailinabox.email/"
   },
   {
     "name": "hexonet",
     "package": "github.com/libdns/hexonet",
-    "description": ""
+    "description": "HEXONET provides domain registration and DNS services.",
+    "url": "https://www.hexonet.net/"
   },
   {
     "name": "alidns",
     "package": "github.com/libdns/alidns",
-    "description": ""
+    "description": "AliDNS is a DNS hosting service by Alibaba Cloud.",
+    "url": "https://www.alibabacloud.com/product/dns"
   },
   {
     "name": "duckdns",
     "package": "github.com/libdns/duckdns",
-    "description": ""
+    "description": "DuckDNS provides free dynamic DNS services.",
+    "url": "https://www.duckdns.org/"
   },
   {
     "name": "njalla",
     "package": "github.com/libdns/njalla",
-    "description": ""
+    "description": "Njalla provides privacy-focused domain registration and DNS services.",
+    "url": "https://njal.la/"
   },
   {
     "name": "totaluptime",
     "package": "github.com/libdns/totaluptime",
-    "description": ""
+    "description": "Total Uptime provides cloud-based DNS services.",
+    "url": "https://totaluptime.com/"
   },
   {
     "name": "ddnss",
     "package": "github.com/libdns/ddnss",
-    "description": ""
+    "description": "DDNSS provides free dynamic DNS services.",
+    "url": "https://ddnss.de/"
   },
   {
     "name": "vercel",
     "package": "github.com/libdns/vercel",
-    "description": ""
+    "description": "Vercel provides web hosting and domain services.",
+    "url": "https://vercel.com/"
   },
   {
     "name": "dinahosting",
     "package": "github.com/libdns/dinahosting",
-    "description": ""
+    "description": "Dinahosting provides web hosting and domain services.",
+    "url": "https://dinahosting.com/"
   },
   {
     "name": "mythicbeasts",
     "package": "github.com/libdns/mythicbeasts",
-    "description": ""
+    "description": "Mythic Beasts provides web hosting and domain services.",
+    "url": "https://www.mythic-beasts.com/"
   },
   {
     "name": "dynv6",
     "package": "github.com/libdns/dynv6",
-    "description": ""
+    "description": "Dynv6 provides free dynamic DNS services.",
+    "url": "https://dynv6.com/"
   },
   {
     "name": "namecheap",
     "package": "github.com/libdns/namecheap",
-    "description": ""
+    "description": "Namecheap is a domain registrar and DNS hosting provider.",
+    "url": "https://www.namecheap.com/"
   },
   {
     "name": "dnspod",
     "package": "github.com/libdns/dnspod",
-    "description": ""
+    "description": "DNSPod provides DNS hosting services.",
+    "url": "https://www.dnspod.com/"
   },
   {
     "name": "metaname",
     "package": "github.com/libdns/metaname",
-    "description": ""
+    "description": "Metaname provides domain registration and DNS services.",
+    "url": "https://metaname.net/"
   }
 ]
