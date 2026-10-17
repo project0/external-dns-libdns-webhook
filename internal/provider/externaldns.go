@@ -196,6 +196,18 @@ func (p *WebhookProvider) ApplyChanges(ctx context.Context, changes *externaldns
 	var errs []error
 
 	forZone := func(endpoint *externaldns.Endpoint) (*zoneChanges, recordKey, string, bool) {
+		if _, _, ok := splitDNSName(endpoint.DNSName, p.zones); !ok {
+			// like other providers, ignore records outside of the managed zones instead of failing all changes
+			event := log.Ctx(ctx).Warn().Str("dns_name", endpoint.DNSName).Str("record_type", endpoint.RecordType)
+			if endpoint.RecordType == externaldns.RecordTypeTXT {
+				event = event.Str("hint", "registry TXT records of zone apex records need --txt-prefix containing %{record_type}, e.g. edns-%{record_type}.")
+			}
+
+			event.Msg("Ignoring endpoint outside of the managed zones")
+
+			return nil, recordKey{}, "", false
+		}
+
 		if reason := p.unsupported(endpoint); reason != "" {
 			errs = append(errs, fmt.Errorf("endpoint %s %s: %s", endpoint.DNSName, endpoint.RecordType, reason))
 

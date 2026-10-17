@@ -328,7 +328,6 @@ func TestApplyChangesPartialFailure(t *testing.T) {
 
 	err := webhook.ApplyChanges(t.Context(), &externaldns.Changes{
 		Create: externaldns.Endpoints{
-			ep("www.example.org", "A", 0, "192.0.2.1"),
 			ep("ptr.example.com", "PTR", 0, "host.example.com"),
 			ep("www.example.com", "A", 0, "192.0.2.1"),
 		},
@@ -339,5 +338,27 @@ func TestApplyChangesPartialFailure(t *testing.T) {
 
 	if got := mem.rrs(t, zone); len(got) != 1 {
 		t.Errorf("valid endpoint must be applied, got %+v", got)
+	}
+}
+
+func TestApplyChangesIgnoresOtherZones(t *testing.T) {
+	t.Parallel()
+
+	mem := newMemoryProvider(zone)
+	webhook := newWebhook(t, []string{"example.com"}, mem, provider.Options{DefaultTTL: time.Hour})
+
+	// the TXT registry names ownership records of apex records "<type>-example.com" by default
+	err := webhook.ApplyChanges(t.Context(), &externaldns.Changes{
+		Create: externaldns.Endpoints{
+			ep("example.com", "MX", 0, "10 mail.example.com"),
+			ep("mx-example.com", "TXT", 0, `"heritage=external-dns,external-dns/owner=default"`),
+		},
+	})
+	if err != nil {
+		t.Fatalf("endpoints outside of the zones must be ignored: %v", err)
+	}
+
+	if got := mem.rrs(t, zone); len(got) != 1 {
+		t.Errorf("expected only the MX record, got %+v", got)
 	}
 }
