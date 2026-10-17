@@ -18,28 +18,25 @@ builds:
 
     main: main.go
 
-dockers:
-  - image_templates:
-      - "{{ .Env.DOCKER_GITHUB_REPO }}:{{ .Version }}-amd64"
-    use: buildx
-    dockerfile: Dockerfile.goreleaser
-    build_flag_templates:
-      - "--platform=linux/amd64"
+snapshot:
+  # snapshot images are built per platform (tag suffix -amd64/-arm64), loaded locally, never pushed
+  version_template: "{{ incpatch .Version }}-next"
 
-  - image_templates:
-      - "{{ .Env.DOCKER_GITHUB_REPO }}:{{ .Version }}-arm64"
-    use: buildx
-    goarch: arm64
+dockers_v2:
+  - images:
+      - "{{ .Env.DOCKER_GITHUB_REPO }}"
+    tags:
+      - "{{ .Version }}"
     dockerfile: Dockerfile.goreleaser
-    build_flag_templates:
-      - "--platform=linux/arm64"
-
-docker_manifests:
-  # github container
-  - name_template: "{{ .Env.DOCKER_GITHUB_REPO }}:{{ .Version }}"
-    image_templates:
-      - "{{ .Env.DOCKER_GITHUB_REPO }}:{{ .Version }}-amd64"
-      - "{{ .Env.DOCKER_GITHUB_REPO }}:{{ .Version }}-arm64"
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    labels:
+      org.opencontainers.image.title: "{{ .ProjectName }}"
+      org.opencontainers.image.source: "https://github.com/project0/external-dns-libdns-webhook"
+      org.opencontainers.image.version: "{{ .Version }}"
+      org.opencontainers.image.revision: "{{ .FullCommit }}"
+      org.opencontainers.image.created: "{{ .Date }}"
 
 checksum:
   name_template: "checksums.txt"

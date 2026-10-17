@@ -1,5 +1,7 @@
 FROM gcr.io/distroless/static-debian12:nonroot
-COPY external-dns-libdns-webhook /external-dns-libdns-webhook
+# goreleaser dockers_v2 context: <os>/<arch>/<binary>
+ARG TARGETPLATFORM
+COPY ${TARGETPLATFORM}/external-dns-libdns-webhook /external-dns-libdns-webhook
 # nonroot, match external-dns default securityContext
 USER 65532:65532
 ENTRYPOINT ["/external-dns-libdns-webhook"]
