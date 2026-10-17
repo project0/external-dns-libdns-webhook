@@ -35,6 +35,7 @@ const (
 	flagProviderDefaultTTL  = "provider.default-ttl"
 	flagProviderMinTTL      = "provider.min-ttl"
 	flagWebhookListen       = "webhook.listen"
+	flagWebhookHealthListen = "webhook.health-listen"
 	flagWebhookReadTimeout  = "webhook.read-timeout"
 	flagWebhookWriteTimeout = "webhook.write-timeout"
 
@@ -142,6 +143,12 @@ func main() {
 				Value:   "localhost:8888",
 				Sources: flagAlternatives(flagWebhookListen),
 			},
+			&cli.StringFlag{
+				Name:    flagWebhookHealthListen,
+				Usage:   "The address serving /healthz and /readyz for probes (host:port), empty to disable",
+				Value:   ":8080",
+				Sources: flagAlternatives(flagWebhookHealthListen),
+			},
 			&cli.DurationFlag{
 				Name:    flagWebhookReadTimeout,
 				Usage:   "The webhook server read timeout",
@@ -198,12 +205,12 @@ func main() {
 				return fmt.Errorf("failed to initialize provider: %w", err)
 			}
 
-			server := webhook.New(
-				webhookProvider,
-				cmd.String(flagWebhookListen),
-				cmd.Duration(flagWebhookReadTimeout),
-				cmd.Duration(flagWebhookWriteTimeout),
-			)
+			server := webhook.New(webhookProvider, webhook.Config{
+				Listen:       cmd.String(flagWebhookListen),
+				HealthListen: cmd.String(flagWebhookHealthListen),
+				ReadTimeout:  cmd.Duration(flagWebhookReadTimeout),
+				WriteTimeout: cmd.Duration(flagWebhookWriteTimeout),
+			})
 
 			//nolint:contextcheck
 			return server.Serve()

@@ -8,9 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
 
@@ -20,20 +18,33 @@ import (
 )
 
 type Server struct {
-	provider   externaldns.Provider
-	httpServer *http.Server
+	provider     externaldns.Provider
+	httpServer   *http.Server
+	healthServer *http.Server
 }
 
-func New(provider externaldns.Provider, listen string, readTimeout time.Duration, writeTimeout time.Duration) *Server {
+// Config of the webhook servers.
+type Config struct {
+	// Listen address of the webhook API, external-dns expects it on localhost:8888 by default.
+	Listen string
+	// HealthListen address serving /healthz and /readyz for probes, disabled if empty.
+	HealthListen string
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+}
+
+const readHeaderTimeout = 5 * time.Second
+
+func New(provider externaldns.Provider, config Config) *Server {
 	mux := http.NewServeMux()
 
 	server := &Server{
 		provider: provider,
 		httpServer: &http.Server{
-			Addr:              listen,
-			ReadHeaderTimeout: 5 * time.Second,
-			ReadTimeout:       readTimeout,
-			WriteTimeout:      writeTimeout,
+			Addr:              config.Listen,
+			ReadHeaderTimeout: readHeaderTimeout,
+			ReadTimeout:       config.ReadTimeout,
+			WriteTimeout:      config.WriteTimeout,
 			Handler:           loggerMiddleware(mux),
 		},
 	}
@@ -46,6 +57,20 @@ func New(provider externaldns.Provider, listen string, readTimeout time.Duration
 
 	mux.HandleFunc("GET /healthz", okHandler)
 	mux.HandleFunc("GET /readyz", okHandler)
+
+	if config.HealthListen != "" {
+		healthMux := http.NewServeMux()
+		healthMux.HandleFunc("GET /healthz", okHandler)
+		healthMux.HandleFunc("GET /readyz", okHandler)
+
+		server.healthServer = &http.Server{
+			Addr:              config.HealthListen,
+			ReadHeaderTimeout: readHeaderTimeout,
+			ReadTimeout:       config.ReadTimeout,
+			WriteTimeout:      config.WriteTimeout,
+			Handler:           healthMux,
+		}
+	}
 
 	return server
 }
@@ -122,49 +147,48 @@ func (r *responseRecorder) Write(b []byte) (int, error) {
 	return n, nil
 }
 
+// Serve runs the servers until SIGINT or SIGTERM is received.
 func (s *Server) Serve() error {
-	var waitGroup sync.WaitGroup
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 
-	waitGroup.Add(1)
+	servers := []*http.Server{s.httpServer}
+	if s.healthServer != nil {
+		servers = append(servers, s.healthServer)
+	}
 
-	go func(server *http.Server) {
-		go func(server *http.Server) {
-			defer waitGroup.Done()
+	errs := make(chan error, len(servers))
 
-			sigChan := make(chan os.Signal, 1)
-			signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-			receivedSignal := <-sigChan
+	for _, server := range servers {
+		go func() {
+			log.Info().Str("addr", server.Addr).Msg("Starting server")
 
-			shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), time.Minute)
-			defer shutdownRelease()
-
-			if err := server.Shutdown(shutdownCtx); err != nil {
-				log.Fatal().
-					Err(err).
-					Str("signal", receivedSignal.String()).
-					Str("addr", server.Addr).
-					Msg("HTTP shutdown error on")
+			if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+				errs <- fmt.Errorf("server %s: %w", server.Addr, err)
 			}
+		}()
+	}
 
-			log.Info().
-				Str("signal", receivedSignal.String()).
-				Str("addr", server.Addr).
-				Msg("Graceful shutdown complete")
-		}(server)
+	var serveErr error
 
-		log.Info().
-			Str("addr", server.Addr).
-			Msg("Starting server")
+	select {
+	case <-ctx.Done():
+		log.Info().Msg("Received shutdown signal")
+	case serveErr = <-errs:
+	}
 
-		if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-			log.Fatal().
-				Err(err).
-				Str("addr", server.Addr).
-				Msg("Failed to run server")
+	shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), time.Minute)
+	defer shutdownRelease()
+
+	for _, server := range servers {
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			serveErr = errors.Join(serveErr, fmt.Errorf("shutdown server %s: %w", server.Addr, err))
 		}
-	}(s.httpServer)
+	}
 
-	waitGroup.Wait()
+	if serveErr == nil {
+		log.Info().Msg("Graceful shutdown complete")
+	}
 
-	return nil
+	return serveErr
 }

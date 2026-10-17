@@ -52,7 +52,7 @@ type response struct {
 func do(t *testing.T, provider externaldns.Provider, method, path, body string) response {
 	t.Helper()
 
-	handler := webhook.New(provider, "localhost:0", time.Second, time.Second).Handler()
+	handler := webhook.New(provider, webhook.Config{Listen: "localhost:0", ReadTimeout: time.Second, WriteTimeout: time.Second}).Handler()
 	req := httptest.NewRequestWithContext(t.Context(), method, path, strings.NewReader(body))
 	req.Header.Set("Accept", mediaType)
 
