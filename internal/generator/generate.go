@@ -163,7 +163,7 @@ func generateRegistry(path string, providers []providerSource) error {
 }
 
 func generateDocs(path string, providers []providerSource) error {
-	dirs, err := packageDirs(providers)
+	files, err := packageFiles(providers)
 	if err != nil {
 		return err
 	}
@@ -171,7 +171,7 @@ func generateDocs(path string, providers []providerSource) error {
 	docs := make([]providerDoc, 0, len(providers))
 
 	for _, provider := range providers {
-		fields, err := providerFields(dirs[provider.Package])
+		fields, err := providerFields(files[provider.Package])
 		if err != nil {
 			return fmt.Errorf("provider %s: %w", provider.Name, err)
 		}
@@ -201,10 +201,10 @@ func writeFile(path string, content []byte) error {
 	return nil
 }
 
-// packageDirs resolves the source directory of every provider package from the module cache.
-func packageDirs(providers []providerSource) (map[string]string, error) {
+// packageFiles resolves the Go source files of every provider package from the module cache.
+func packageFiles(providers []providerSource) (map[string][]string, error) {
 	args := make([]string, 0, len(providers)+3) //nolint:mnd // go list flags
-	args = append(args, "list", "-f", "{{.ImportPath}} {{.Dir}}")
+	args = append(args, "list", "-f", `{{.ImportPath}} {{range .GoFiles}}{{$.Dir}}/{{.}} {{end}}`)
 
 	for _, provider := range providers {
 		args = append(args, provider.Package)
@@ -215,48 +215,42 @@ func packageDirs(providers []providerSource) (map[string]string, error) {
 		return nil, fmt.Errorf("go list provider packages: %w", err)
 	}
 
-	dirs := map[string]string{}
+	files := map[string][]string{}
 
 	for line := range strings.Lines(string(out)) {
-		importPath, dir, ok := strings.Cut(strings.TrimSpace(line), " ")
-		if ok {
-			dirs[importPath] = dir
+		if fields := strings.Fields(line); len(fields) > 1 {
+			files[fields[0]] = fields[1:]
 		}
 	}
 
-	return dirs, nil
+	return files, nil
 }
 
-// providerFields extracts the JSON configurable fields of the Provider struct within a package directory.
-func providerFields(dir string) ([]configField, error) {
-	if dir == "" {
+// providerFields extracts the JSON configurable fields of the Provider struct within the package files.
+func providerFields(files []string) ([]configField, error) {
+	if len(files) == 0 {
 		return nil, errors.New("package source not found, run go mod download")
 	}
 
 	fset := token.NewFileSet()
-
-	pkgs, err := parser.ParseDir(fset, dir, func(info os.FileInfo) bool {
-		return !strings.HasSuffix(info.Name(), "_test.go")
-	}, parser.ParseComments)
-	if err != nil {
-		return nil, fmt.Errorf("parse %s: %w", dir, err)
-	}
-
 	structs := map[string]*ast.StructType{}
 
-	for _, pkg := range pkgs {
-		for _, file := range pkg.Files {
-			for _, decl := range file.Decls {
-				gen, ok := decl.(*ast.GenDecl)
-				if !ok || gen.Tok != token.TYPE {
-					continue
-				}
+	for _, path := range files {
+		file, err := parser.ParseFile(fset, path, nil, parser.ParseComments)
+		if err != nil {
+			return nil, fmt.Errorf("parse %s: %w", path, err)
+		}
 
-				for _, spec := range gen.Specs {
-					typeSpec, _ := spec.(*ast.TypeSpec)
-					if st, ok := typeSpec.Type.(*ast.StructType); ok {
-						structs[typeSpec.Name.Name] = st
-					}
+		for _, decl := range file.Decls {
+			gen, ok := decl.(*ast.GenDecl)
+			if !ok || gen.Tok != token.TYPE {
+				continue
+			}
+
+			for _, spec := range gen.Specs {
+				typeSpec, _ := spec.(*ast.TypeSpec)
+				if st, ok := typeSpec.Type.(*ast.StructType); ok {
+					structs[typeSpec.Name.Name] = st
 				}
 			}
 		}
