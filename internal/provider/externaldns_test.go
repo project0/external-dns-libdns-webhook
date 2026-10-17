@@ -7,10 +7,22 @@ import (
 
 	"github.com/libdns/libdns"
 	"github.com/project0/external-dns-libdns-webhook/internal/externaldns"
+	"github.com/project0/external-dns-libdns-webhook/internal/libdnsregistry"
 	"github.com/project0/external-dns-libdns-webhook/internal/provider"
 )
 
 const zone = "example.com."
+
+func newWebhook(t *testing.T, zones []string, libdnsProvider libdnsregistry.Provider, opts provider.Options) *provider.WebhookProvider {
+	t.Helper()
+
+	webhook, err := provider.New(t.Context(), zones, libdnsProvider, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return webhook
+}
 
 func ep(name, recordType string, ttl int64, targets ...string) *externaldns.Endpoint {
 	return &externaldns.Endpoint{DNSName: name, RecordType: recordType, RecordTTL: ttl, Targets: targets}
@@ -70,7 +82,7 @@ func TestRecordsGrouping(t *testing.T) {
 		libdns.RR{Name: "txt", Type: "TXT", TTL: 5 * time.Minute, Data: "heritage=external-dns,external-dns/owner=default"},
 	)
 
-	endpoints, err := provider.New([]string{"example.com"}, mem, provider.Options{DefaultTTL: time.Hour}).Records(t.Context())
+	endpoints, err := newWebhook(t, []string{"example.com"}, mem, provider.Options{DefaultTTL: time.Hour}).Records(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,7 +101,7 @@ func TestRecordsGrouping(t *testing.T) {
 func TestRecordsZoneError(t *testing.T) {
 	t.Parallel()
 
-	_, err := provider.New([]string{"example.com", "missing.org"}, newMemoryProvider(zone), provider.Options{}).Records(t.Context())
+	_, err := newWebhook(t, []string{"example.com", "missing.org"}, newMemoryProvider(zone), provider.Options{}).Records(t.Context())
 	if err == nil {
 		t.Fatal("expected error for unknown zone")
 	}
@@ -99,7 +111,7 @@ func TestCreateRoundTrip(t *testing.T) {
 	t.Parallel()
 
 	mem := newMemoryProvider(zone)
-	webhook := provider.New([]string{"example.com"}, mem, provider.Options{DefaultTTL: time.Hour})
+	webhook := newWebhook(t, []string{"example.com"}, mem, provider.Options{DefaultTTL: time.Hour})
 
 	desired := externaldns.Endpoints{
 		ep("example.com", "MX", 3600, "10 mail.example.com", "20 backup.example.com."),
@@ -140,4 +152,29 @@ func TestCreateRoundTrip(t *testing.T) {
 		ep("example.com", "TXT", 300, "v=spf1 -all"),
 		ep("www.example.com", "A", 300, "192.0.2.1", "192.0.2.2"),
 	})
+}
+
+// withoutZoneLister hides the ListZones method of a provider.
+type withoutZoneLister struct {
+	libdnsregistry.Provider
+}
+
+func TestZoneDiscovery(t *testing.T) {
+	t.Parallel()
+
+	mem := newMemoryProvider("example.com.", "sub.example.com.", "example.org.")
+
+	webhook := newWebhook(t, nil, mem, provider.Options{})
+	if got, want := webhook.GetDomainFilter(t.Context()).Include, []string{"sub.example.com", "example.com", "example.org"}; !slices.Equal(got, want) {
+		t.Errorf("discovered zones %v, want %v", got, want)
+	}
+
+	webhook = newWebhook(t, []string{"example.org"}, mem, provider.Options{})
+	if got := webhook.GetDomainFilter(t.Context()).Include; !slices.Equal(got, []string{"example.org"}) {
+		t.Errorf("configured zones must take precedence, got %v", got)
+	}
+
+	if _, err := provider.New(t.Context(), nil, withoutZoneLister{mem}, provider.Options{}); err == nil {
+		t.Error("expected error without zones and zone lister")
+	}
 }

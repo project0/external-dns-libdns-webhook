@@ -51,7 +51,7 @@ func planChanges(current, desired externaldns.Endpoints) []string {
 func TestAdjustEndpoints(t *testing.T) {
 	t.Parallel()
 
-	webhook := provider.New([]string{"example.com"}, newMemoryProvider(zone),
+	webhook := newWebhook(t, []string{"example.com"}, newMemoryProvider(zone),
 		provider.Options{DefaultTTL: time.Hour, MinTTL: 5 * time.Minute})
 
 	withSetID := ep("weighted.example.com", "A", 300, "192.0.2.1")
@@ -87,7 +87,7 @@ func TestNoOpPlanAfterApply(t *testing.T) {
 	// unsupported record types are neither returned nor touched
 	soa := libdns.RR{Name: "@", Type: "SOA", TTL: time.Hour, Data: "ns1.example.net. hostmaster.example.org. 1 7200 3600 1209600 3600"}
 	mem.seed(t, "sub.example.org.", soa)
-	webhook := provider.New([]string{"example.com", "sub.example.org"}, mem, provider.Options{DefaultTTL: time.Hour})
+	webhook := newWebhook(t, []string{"example.com", "sub.example.org"}, mem, provider.Options{DefaultTTL: time.Hour})
 
 	desiredSource := func() externaldns.Endpoints {
 		withProviderSpecific := ep("www.example.com", "A", 0, "192.0.2.2", "192.0.2.1")
@@ -141,7 +141,7 @@ func TestNoOpPlanWithProviderMinTTL(t *testing.T) {
 	// emulates a provider raising TTLs to its minimum, like INWX does with 300 seconds
 	mem := newMemoryProvider(zone)
 	mem.minTTL = 5 * time.Minute
-	webhook := provider.New([]string{"example.com"}, mem, provider.Options{DefaultTTL: time.Hour, MinTTL: 5 * time.Minute})
+	webhook := newWebhook(t, []string{"example.com"}, mem, provider.Options{DefaultTTL: time.Hour, MinTTL: 5 * time.Minute})
 
 	adjusted, err := webhook.AdjustEndpoints(t.Context(), externaldns.Endpoints{ep("www.example.com", "A", 60, "192.0.2.1")})
 	if err != nil {
@@ -167,7 +167,7 @@ func TestApplyChangesReplaceAWithCNAME(t *testing.T) {
 
 	mem := newMemoryProvider(zone)
 	mem.seed(t, zone, libdns.RR{Name: "www", Type: "A", TTL: time.Hour, Data: "192.0.2.1"})
-	webhook := provider.New([]string{"example.com"}, mem, provider.Options{DefaultTTL: time.Hour})
+	webhook := newWebhook(t, []string{"example.com"}, mem, provider.Options{DefaultTTL: time.Hour})
 
 	err := webhook.ApplyChanges(t.Context(), &externaldns.Changes{
 		Create: externaldns.Endpoints{ep("www.example.com", "CNAME", 3600, "example.com")},
@@ -239,7 +239,7 @@ func TestApplyChangesUpdate(t *testing.T) {
 
 			mem := newMemoryProvider(zone)
 			mem.seed(t, zone, seed...)
-			webhook := provider.New([]string{"example.com"}, mem, provider.Options{DefaultTTL: time.Hour})
+			webhook := newWebhook(t, []string{"example.com"}, mem, provider.Options{DefaultTTL: time.Hour})
 
 			err := webhook.ApplyChanges(t.Context(), &externaldns.Changes{
 				UpdateOld: externaldns.Endpoints{tc.old},
@@ -287,7 +287,7 @@ func TestApplyChangesDeleteListedTargetsOnly(t *testing.T) {
 		libdns.RR{Name: "sub", Type: "NS", TTL: time.Hour, Data: "ns1.example.net"},
 		libdns.RR{Name: "sub", Type: "NS", TTL: time.Hour, Data: "ns2.example.net."},
 	)
-	webhook := provider.New([]string{"example.com"}, mem, provider.Options{DefaultTTL: time.Hour})
+	webhook := newWebhook(t, []string{"example.com"}, mem, provider.Options{DefaultTTL: time.Hour})
 
 	err := webhook.ApplyChanges(t.Context(), &externaldns.Changes{
 		Delete: externaldns.Endpoints{ep("sub.example.com", "NS", 0, "ns1.example.net")},
@@ -307,7 +307,7 @@ func TestApplyChangesCreateIsIdempotent(t *testing.T) {
 
 	mem := newMemoryProvider(zone)
 	mem.seed(t, zone, libdns.RR{Name: "www", Type: "A", TTL: time.Hour, Data: "192.0.2.1"})
-	webhook := provider.New([]string{"example.com"}, mem, provider.Options{DefaultTTL: time.Hour})
+	webhook := newWebhook(t, []string{"example.com"}, mem, provider.Options{DefaultTTL: time.Hour})
 
 	err := webhook.ApplyChanges(t.Context(), &externaldns.Changes{
 		Create: externaldns.Endpoints{ep("www.example.com", "A", 0, "192.0.2.1", "192.0.2.2")},
@@ -325,7 +325,7 @@ func TestApplyChangesPartialFailure(t *testing.T) {
 	t.Parallel()
 
 	mem := newMemoryProvider(zone)
-	webhook := provider.New([]string{"example.com"}, mem, provider.Options{DefaultTTL: time.Hour})
+	webhook := newWebhook(t, []string{"example.com"}, mem, provider.Options{DefaultTTL: time.Hour})
 
 	err := webhook.ApplyChanges(t.Context(), &externaldns.Changes{
 		Create: externaldns.Endpoints{

@@ -30,13 +30,38 @@ type WebhookProvider struct {
 	minTTL         int64
 }
 
-func New(zones []string, libdnsProvider libdnsregistry.Provider, opts Options) *WebhookProvider {
+// New creates the webhook provider. Without configured zones, the zones are discovered once
+// if the libdns provider implements libdns.ZoneLister.
+func New(ctx context.Context, zones []string, libdnsProvider libdnsregistry.Provider, opts Options) (*WebhookProvider, error) {
+	if len(zones) == 0 {
+		lister, ok := libdnsProvider.(libdns.ZoneLister)
+		if !ok {
+			return nil, errors.New("no zones configured and the provider does not support listing zones")
+		}
+
+		listed, err := lister.ListZones(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list zones: %w", err)
+		}
+
+		for _, zone := range listed {
+			zones = append(zones, zone.Name)
+		}
+
+		log.Ctx(ctx).Info().Strs("zones", zones).Msg("Discovered zones")
+	}
+
+	normalized := normalizeZones(zones)
+	if len(normalized) == 0 {
+		return nil, errors.New("no zones to manage")
+	}
+
 	return &WebhookProvider{
-		zones:          normalizeZones(zones),
+		zones:          normalized,
 		libdnsProvider: libdnsProvider,
 		defaultTTL:     int64(opts.DefaultTTL.Seconds()),
 		minTTL:         int64(opts.MinTTL.Seconds()),
-	}
+	}, nil
 }
 
 // Records returns all supported records of the managed zones, grouped by name and type.

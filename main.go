@@ -120,10 +120,9 @@ func main() {
 				Value:   "{}",
 			},
 			&cli.StringSliceFlag{
-				Name:     flagProviderZones,
-				Usage:    "The name of the dns zones that the provider will manage",
-				Required: true,
-				Sources:  flagAlternatives(flagProviderZones),
+				Name:    flagProviderZones,
+				Usage:   "The name of the dns zones that the provider will manage, discovered from the provider if empty and supported",
+				Sources: flagAlternatives(flagProviderZones),
 			},
 			&cli.DurationFlag{
 				Name:    flagProviderDefaultTTL,
@@ -174,7 +173,7 @@ func main() {
 			return ctx, nil
 		},
 
-		Action: func(_ context.Context, cmd *cli.Command) error {
+		Action: func(ctx context.Context, cmd *cli.Command) error {
 			confs := [][]byte{}
 			if conf := cmd.String(flagProviderConfig); conf != "" {
 				confs = append(confs, []byte(conf))
@@ -191,11 +190,16 @@ func main() {
 				return fmt.Errorf("failed to create provider %s: %w", providerName, err)
 			}
 
+			webhookProvider, err := provider.New(log.Logger.WithContext(ctx), cmd.StringSlice(flagProviderZones), libdnsProvider, provider.Options{
+				DefaultTTL: cmd.Duration(flagProviderDefaultTTL),
+				MinTTL:     cmd.Duration(flagProviderMinTTL),
+			})
+			if err != nil {
+				return fmt.Errorf("failed to initialize provider: %w", err)
+			}
+
 			server := webhook.New(
-				provider.New(cmd.StringSlice(flagProviderZones), libdnsProvider, provider.Options{
-					DefaultTTL: cmd.Duration(flagProviderDefaultTTL),
-					MinTTL:     cmd.Duration(flagProviderMinTTL),
-				}),
+				webhookProvider,
 				cmd.String(flagWebhookListen),
 				cmd.Duration(flagWebhookReadTimeout),
 				cmd.Duration(flagWebhookWriteTimeout),
