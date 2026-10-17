@@ -4,8 +4,8 @@ go 1.24.0
 
 require (
 	github.com/libdns/libdns v0.2.3
-	github.com/rs/zerolog v1.33.0
-	github.com/urfave/cli/v3 v3.0.0-beta1
+	github.com/rs/zerolog v1.35.1
+	github.com/urfave/cli/v3 v3.14.0
 )
 
 require (
@@ -51,7 +51,6 @@ require (
 	github.com/libdns/totaluptime v1.0.1
 	github.com/libdns/transip v0.0.0-20240619142000-fc072056ed2e
 	github.com/libdns/vercel v0.0.2
-
 )
 
 require (
@@ -91,7 +90,6 @@ require (
 	github.com/nrdcg/dnspod-go v0.4.0 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/pquerna/otp v1.4.0 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/transip/gotransip/v6 v6.26.0 // indirect

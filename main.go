@@ -35,6 +35,9 @@ const (
 	flagWebhookListen       = "webhook.listen"
 	flagWebhookReadTimeout  = "webhook.read-timeout"
 	flagWebhookWriteTimeout = "webhook.write-timeout"
+
+	logFormatText = "text"
+	logFormatJSON = "json"
 )
 
 func flagEnv(name string) cli.ValueSourceChain {
@@ -85,10 +88,10 @@ func main() {
 			&cli.StringFlag{
 				Name:    flagLogFormat,
 				Usage:   "The log format (text, json)",
-				Value:   "text",
+				Value:   logFormatText,
 				Sources: flagAlternatives(flagLogFormat),
 				Validator: func(s string) error {
-					if s != "text" && s != "json" {
+					if s != logFormatText && s != logFormatJSON {
 						return errors.New("log format must be text or json")
 					}
 
@@ -142,13 +145,15 @@ func main() {
 
 		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 			// setup logging
-			if cmd.String(flagLogFormat) == "text" {
+			if cmd.String(flagLogFormat) == logFormatText {
 				log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339})
 			}
+
 			level, err := zerolog.ParseLevel(cmd.String(flagLogLevel))
 			if err != nil {
 				return ctx, fmt.Errorf("failed to parse log level: %w", err)
 			}
+
 			log.Info().Msgf("Setting log level to %s", level.String())
 			zerolog.SetGlobalLevel(level)
 
@@ -166,6 +171,7 @@ func main() {
 			}
 
 			providerName := cmd.String(flagProviderName)
+
 			libdnsProvider, err := libdnsregistry.New(providerName, confs)
 			if err != nil {
 				return fmt.Errorf("failed to create provider %s: %w", providerName, err)

@@ -52,7 +52,7 @@ func main() {
 
 	providers := new([]providerSource)
 
-	listJSON, err := os.ReadFile(args[1])
+	listJSON, err := os.ReadFile(args[1]) //nolint:gosec // path is provided by go:generate
 	if err != nil {
 		panic(err)
 	}

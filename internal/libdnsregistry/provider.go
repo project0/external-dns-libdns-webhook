@@ -67,7 +67,7 @@ func configurationDetails[T any]() RegistryProviderConfigs {
 }
 
 func List() []string {
-	providers := []string{}
+	providers := make([]string, 0, len(registry))
 	for k := range registry {
 		providers = append(providers, k)
 	}
