@@ -4,7 +4,7 @@ An [ExternalDNS](https://github.com/kubernetes-sigs/external-dns) [webhook provi
 
 - Supported providers and their configuration: [PROVIDERS.md](PROVIDERS.md)
 - Record types: `A`, `AAAA`, `CNAME`, `TXT`, `MX`, `SRV`, `NS`
-- Tested with external-dns v0.23.0 and libdns v1.1.1
+- Built for external-dns v0.23.0 (webhook API version 1) and libdns v1.1.1
 
 ## Configuration
 
@@ -49,6 +49,7 @@ LIBDNS_PROVIDER_NAME=fakememory LIBDNS_PROVIDER_CONFIG='{"zones":["example.com"]
 Run the webhook as sidecar with the external-dns Helm chart, see [example/values.yaml](example/values.yaml):
 
 - external-dns manages only `A`, `AAAA` and `CNAME` records by default, add the other types to `managedRecordTypes` (`--managed-record-types`).
+- Set `txtPrefix` (`--txt-prefix`) containing `%{record_type}`, e.g. `edns-%{record_type}.`. By default the TXT registry names the ownership record of a zone apex record `mx-example.com`, which is outside of the zone and ignored by the webhook. Changing the prefix of an existing installation changes the names of all ownership records.
 - external-dns v0.22.0 changed the annotation prefix to `external-dns.kubernetes.io/`, annotations with the old `external-dns.alpha.kubernetes.io/` prefix are ignored unless `--enable-legacy-annotation-prefix` is set.
 
 ### MX, SRV and NS records

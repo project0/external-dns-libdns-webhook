@@ -34,6 +34,8 @@ sources:
 policy: sync
 registry: txt
 txtOwnerId: my-cluster
+# ownership TXT records of zone apex records are otherwise named "<type>-example.com", outside of the zone
+txtPrefix: edns-%{record_type}.
 
 domainFilters:
   - example.com
