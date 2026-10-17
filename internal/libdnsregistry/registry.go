@@ -6,27 +6,19 @@ import (
 	libdnsalidns "github.com/libdns/alidns"
 	libdnsautodns "github.com/libdns/autodns"
 	libdnsbunny "github.com/libdns/bunny"
-	libdnsddnss "github.com/libdns/ddnss"
 	libdnsdesec "github.com/libdns/desec"
-	libdnsdinahosting "github.com/libdns/dinahosting"
 	libdnsdirectadmin "github.com/libdns/directadmin"
 	libdnsdnsexit "github.com/libdns/dnsexit"
 	libdnsdnsimple "github.com/libdns/dnsimple"
 	libdnsdnsmadeeasy "github.com/libdns/dnsmadeeasy"
-	libdnsdnspod "github.com/libdns/dnspod"
 	libdnsdnsupdate "github.com/libdns/dnsupdate"
-	libdnsdreamhost "github.com/libdns/dreamhost"
 	libdnsduckdns "github.com/libdns/duckdns"
 	libdnsdynu "github.com/libdns/dynu"
 	libdnsdynv6 "github.com/libdns/dynv6"
 	libdnseasydns "github.com/libdns/easydns"
 	libdnshe "github.com/libdns/he"
-	libdnshexonet "github.com/libdns/hexonet"
-	libdnshosttech "github.com/libdns/hosttech"
 	libdnsinfomaniak "github.com/libdns/infomaniak"
 	libdnsinwx "github.com/libdns/inwx"
-	libdnskatapult "github.com/libdns/katapult"
-	libdnsleaseweb "github.com/libdns/leaseweb"
 	libdnsloopia "github.com/libdns/loopia"
 	libdnsluadns "github.com/libdns/luadns"
 	libdnsmailinabox "github.com/libdns/mailinabox"
@@ -42,7 +34,6 @@ import (
 	libdnsrfc2136 "github.com/libdns/rfc2136"
 	libdnsselectel "github.com/libdns/selectel"
 	libdnstimeweb "github.com/libdns/timeweb"
-	libdnstotaluptime "github.com/libdns/totaluptime"
 	libdnstransip "github.com/libdns/transip"
 	libdnsvercel "github.com/libdns/vercel"
 )
@@ -63,19 +54,9 @@ var registry = RegistryStore{
 			return initProvider[libdnsbunny.Provider](conf)
 		},
 	},
-	"ddnss": &RegistryProvider{
-		Init: func(conf [][]byte) (Provider, error) {
-			return initProvider[libdnsddnss.Provider](conf)
-		},
-	},
 	"desec": &RegistryProvider{
 		Init: func(conf [][]byte) (Provider, error) {
 			return initProvider[libdnsdesec.Provider](conf)
-		},
-	},
-	"dinahosting": &RegistryProvider{
-		Init: func(conf [][]byte) (Provider, error) {
-			return initProvider[libdnsdinahosting.Provider](conf)
 		},
 	},
 	"directadmin": &RegistryProvider{
@@ -98,19 +79,9 @@ var registry = RegistryStore{
 			return initProvider[libdnsdnsmadeeasy.Provider](conf)
 		},
 	},
-	"dnspod": &RegistryProvider{
-		Init: func(conf [][]byte) (Provider, error) {
-			return initProvider[libdnsdnspod.Provider](conf)
-		},
-	},
 	"dnsupdate": &RegistryProvider{
 		Init: func(conf [][]byte) (Provider, error) {
 			return initProvider[libdnsdnsupdate.Provider](conf)
-		},
-	},
-	"dreamhost": &RegistryProvider{
-		Init: func(conf [][]byte) (Provider, error) {
-			return initProvider[libdnsdreamhost.Provider](conf)
 		},
 	},
 	"duckdns": &RegistryProvider{
@@ -138,16 +109,6 @@ var registry = RegistryStore{
 			return initProvider[libdnshe.Provider](conf)
 		},
 	},
-	"hexonet": &RegistryProvider{
-		Init: func(conf [][]byte) (Provider, error) {
-			return initProvider[libdnshexonet.Provider](conf)
-		},
-	},
-	"hosttech": &RegistryProvider{
-		Init: func(conf [][]byte) (Provider, error) {
-			return initProvider[libdnshosttech.Provider](conf)
-		},
-	},
 	"infomaniak": &RegistryProvider{
 		Init: func(conf [][]byte) (Provider, error) {
 			return initProvider[libdnsinfomaniak.Provider](conf)
@@ -156,16 +117,6 @@ var registry = RegistryStore{
 	"inwx": &RegistryProvider{
 		Init: func(conf [][]byte) (Provider, error) {
 			return initProvider[libdnsinwx.Provider](conf)
-		},
-	},
-	"katapult": &RegistryProvider{
-		Init: func(conf [][]byte) (Provider, error) {
-			return initProvider[libdnskatapult.Provider](conf)
-		},
-	},
-	"leaseweb": &RegistryProvider{
-		Init: func(conf [][]byte) (Provider, error) {
-			return initProvider[libdnsleaseweb.Provider](conf)
 		},
 	},
 	"loopia": &RegistryProvider{
@@ -241,11 +192,6 @@ var registry = RegistryStore{
 	"timeweb": &RegistryProvider{
 		Init: func(conf [][]byte) (Provider, error) {
 			return initProvider[libdnstimeweb.Provider](conf)
-		},
-	},
-	"totaluptime": &RegistryProvider{
-		Init: func(conf [][]byte) (Provider, error) {
-			return initProvider[libdnstotaluptime.Provider](conf)
 		},
 	},
 	"transip": &RegistryProvider{

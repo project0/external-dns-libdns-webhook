@@ -18,22 +18,10 @@
     "url": "https://www.inwx.com/"
   },
   {
-    "name": "katapult",
-    "package": "github.com/libdns/katapult",
-    "description": "Katapult provides cloud infrastructure services.",
-    "url": "https://katapult.io/"
-  },
-  {
     "name": "autodns",
     "package": "github.com/libdns/autodns",
     "description": "AutoDNS is a DNS management service by InterNetX.",
     "url": "https://www.internetx.com/"
-  },
-  {
-    "name": "hosttech",
-    "package": "github.com/libdns/hosttech",
-    "description": "Hosttech provides web hosting and domain services.",
-    "url": "https://www.hosttech.ch/"
   },
   {
     "name": "he",
@@ -54,22 +42,10 @@
     "url": "https://www.name.com/"
   },
   {
-    "name": "leaseweb",
-    "package": "github.com/libdns/leaseweb",
-    "description": "Leaseweb provides cloud hosting and domain services.",
-    "url": "https://www.leaseweb.com/"
-  },
-  {
     "name": "porkbun",
     "package": "github.com/libdns/porkbun",
     "description": "Porkbun is a domain registrar and DNS hosting provider.",
     "url": "https://porkbun.com/"
-  },
-  {
-    "name": "dreamhost",
-    "package": "github.com/libdns/dreamhost",
-    "description": "DreamHost provides web hosting and domain services.",
-    "url": "https://www.dreamhost.com/"
   },
   {
     "name": "timeweb",
@@ -174,12 +150,6 @@
     "url": "https://mailinabox.email/"
   },
   {
-    "name": "hexonet",
-    "package": "github.com/libdns/hexonet",
-    "description": "HEXONET provides domain registration and DNS services.",
-    "url": "https://www.hexonet.net/"
-  },
-  {
     "name": "alidns",
     "package": "github.com/libdns/alidns",
     "description": "AliDNS is a DNS hosting service by Alibaba Cloud.",
@@ -198,28 +168,10 @@
     "url": "https://njal.la/"
   },
   {
-    "name": "totaluptime",
-    "package": "github.com/libdns/totaluptime",
-    "description": "Total Uptime provides cloud-based DNS services.",
-    "url": "https://totaluptime.com/"
-  },
-  {
-    "name": "ddnss",
-    "package": "github.com/libdns/ddnss",
-    "description": "DDNSS provides free dynamic DNS services.",
-    "url": "https://ddnss.de/"
-  },
-  {
     "name": "vercel",
     "package": "github.com/libdns/vercel",
     "description": "Vercel provides web hosting and domain services.",
     "url": "https://vercel.com/"
-  },
-  {
-    "name": "dinahosting",
-    "package": "github.com/libdns/dinahosting",
-    "description": "Dinahosting provides web hosting and domain services.",
-    "url": "https://dinahosting.com/"
   },
   {
     "name": "mythicbeasts",
@@ -238,12 +190,6 @@
     "package": "github.com/libdns/namecheap",
     "description": "Namecheap is a domain registrar and DNS hosting provider.",
     "url": "https://www.namecheap.com/"
-  },
-  {
-    "name": "dnspod",
-    "package": "github.com/libdns/dnspod",
-    "description": "DNSPod provides DNS hosting services.",
-    "url": "https://www.dnspod.com/"
   },
   {
     "name": "metaname",

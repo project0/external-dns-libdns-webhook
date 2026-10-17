@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/libdns/libdns"
@@ -11,165 +12,113 @@ import (
 )
 
 type WebhookProvider struct {
-	// DomainFilter, as zoneList is not implemented in the majority of libdns providers it is a fixed list of zones
-	zones              []string
-	libdnsProvider     libdnsregistry.Provider
-	cachedZonesRecords map[string][]libdns.Record
+	// zones managed by the provider, normalized and sorted by most specific first
+	zones          []string
+	libdnsProvider libdnsregistry.Provider
 }
 
 func New(zones []string, libdnsProvider libdnsregistry.Provider) *WebhookProvider {
 	return &WebhookProvider{
-		zones:              zones,
-		libdnsProvider:     libdnsProvider,
-		cachedZonesRecords: map[string][]libdns.Record{},
+		zones:          normalizeZones(zones),
+		libdnsProvider: libdnsProvider,
 	}
 }
 
+// Records returns all supported records of the managed zones, grouped by name and type.
 func (p *WebhookProvider) Records(ctx context.Context) (externaldns.Endpoints, error) {
-	endpoints := []*externaldns.Endpoint{}
+	endpoints := externaldns.Endpoints{}
 
-	// return all records for configured zones
 	for _, zone := range p.zones {
 		logger := log.Ctx(ctx).With().Str("zone", zone).Logger()
 		logger.Debug().Msg("Retrieving records for zone")
 
-		records, err := p.libdnsProvider.GetRecords(ctx, zone)
+		// fail entirely, otherwise external-dns would plan to recreate records of the missing zone
+		records, err := p.libdnsProvider.GetRecords(ctx, fqdn(zone))
 		if err != nil {
-			logger.Err(err).Msg("Failed to retrieve records for zone")
-
-			return nil, fmt.Errorf("failed to retrieve records for zone: %w", err)
+			return nil, fmt.Errorf("failed to retrieve records for zone %s: %w", zone, err)
 		}
 
-		// as there is no real concurrent sync in progress we can cache between the calls to avoid calling api too many times
-		p.cachedZonesRecords[zone] = records
-
-		for _, record := range records {
-			endpoint := toExternalDNSEndpoint(record, zone)
-			logger.Trace().
-				Any("record", record).
-				Any("endpoint", endpoint).
-				Msg("Record converted to endpoint")
-
-			endpoints = append(endpoints, endpoint)
+		zoneEndpoints, err := recordsToEndpoints(records, zone)
+		if err != nil {
+			// a single malformed record must not break the whole sync
+			logger.Warn().Err(err).Msg("Skipped records that cannot be converted")
 		}
+
+		logger.Trace().Any("records", records).Any("endpoints", zoneEndpoints).Msg("Records converted to endpoints")
+
+		endpoints = append(endpoints, zoneEndpoints...)
 	}
 
 	return endpoints, nil
 }
 
 func (p *WebhookProvider) ApplyChanges(ctx context.Context, changes *externaldns.Changes) error {
-	log.Ctx(ctx).Debug().
-		Any("changes_create", changes.Create).
-		Msg("Convet creation change endpoints to records")
-
-	creates, err := endpointsToLibdnsZoneRecords(changes.Create, p.zones)
+	creates, err := p.zoneRecords(changes.Create)
 	if err != nil {
 		return err
 	}
 
-	log.Ctx(ctx).Debug().
-		Any("changes_delete", changes.Delete).
-		Msg("Convert deletion change endpoints to records")
-
-	deletes, err := endpointsToLibdnsZoneRecords(changes.Delete, p.zones)
+	deletes, err := p.zoneRecords(changes.Delete)
 	if err != nil {
 		return err
 	}
 
-	log.Ctx(ctx).Debug().
-		Any("changes_update_new", changes.UpdateNew).
-		Any("changes_update_old", changes.UpdateOld).
-		Msg("Convert updates change endpoints to records")
-
-	updates, err := endpointsToLibdnsZoneRecords(changes.UpdateNew, p.zones)
+	updates, err := p.zoneRecords(changes.UpdateNew)
 	if err != nil {
 		return err
 	}
 
-	if len(creates) > 0 {
-		for zone, records := range creates {
-			log.Ctx(ctx).Info().
-				Any("records", records).
-				Any("zone", zone).
-				Msg("Creating records")
+	var errs []error
 
-			_, err := p.libdnsProvider.AppendRecords(ctx, zone, records)
-			if err != nil {
-				return fmt.Errorf("failed to create records: %w", err)
-			}
+	for zone, records := range creates {
+		log.Ctx(ctx).Info().Str("zone", zone).Any("records", records).Msg("Creating records")
+
+		if _, err := p.libdnsProvider.AppendRecords(ctx, fqdn(zone), records); err != nil {
+			errs = append(errs, fmt.Errorf("failed to create records in zone %s: %w", zone, err))
 		}
 	}
 
-	if len(deletes) > 0 {
-		for zone, records := range deletes {
-			log.Ctx(ctx).Info().
-				Any("records", records).
-				Any("zone", zone).
-				Msg("Deleting records")
+	for zone, records := range deletes {
+		log.Ctx(ctx).Info().Str("zone", zone).Any("records", records).Msg("Deleting records")
 
-			_, err := p.libdnsProvider.DeleteRecords(ctx, zone, records)
-			if err != nil {
-				return fmt.Errorf("failed to delete records: %w", err)
-			}
+		if _, err := p.libdnsProvider.DeleteRecords(ctx, fqdn(zone), records); err != nil {
+			errs = append(errs, fmt.Errorf("failed to delete records in zone %s: %w", zone, err))
 		}
 	}
 
-	if len(updates) > 0 {
-		for zone, records := range updates {
-			log.Ctx(ctx).Info().
-				Any("records", records).
-				Any("zone", zone).
-				Msg("Updating records")
+	for zone, records := range updates {
+		log.Ctx(ctx).Info().Str("zone", zone).Any("records", records).Msg("Updating records")
 
-			_, err := p.libdnsProvider.SetRecords(ctx, zone, records)
-			if err != nil {
-				return fmt.Errorf("failed to update records: %w", err)
-			}
+		if _, err := p.libdnsProvider.SetRecords(ctx, fqdn(zone), records); err != nil {
+			errs = append(errs, fmt.Errorf("failed to update records in zone %s: %w", zone, err))
 		}
 	}
 
-	return nil
+	return errors.Join(errs...)
 }
 
-func (p *WebhookProvider) AdjustEndpoints(ctx context.Context, endpoints externaldns.Endpoints) (externaldns.Endpoints, error) {
+// zoneRecords converts endpoints to libdns records grouped by zone.
+func (p *WebhookProvider) zoneRecords(endpoints externaldns.Endpoints) (map[string][]libdns.Record, error) {
+	zoneRecords := map[string][]libdns.Record{}
+
 	for _, endpoint := range endpoints {
-		// defaults
-		if _, exist := endpoint.GetProviderSpecificProperty(identifierLabelWeight); !exist {
-			endpoint.WithProviderSpecific(identifierLabelWeight, "0")
+		zone, name, ok := splitDNSName(endpoint.DNSName, p.zones)
+		if !ok {
+			return nil, fmt.Errorf("no matching zone found for %s", endpoint.DNSName)
 		}
 
-		if _, exist := endpoint.GetProviderSpecificProperty(identifierLabelPriority); !exist {
-			endpoint.WithProviderSpecific(identifierLabelPriority, "0")
+		records, err := endpointToRecords(endpoint, name)
+		if err != nil {
+			return nil, err
 		}
 
-		// set missing record IDs
-		if _, exist := endpoint.GetProviderSpecificProperty(identifierLabelID); !exist {
-			endpoint.WithProviderSpecific(identifierLabelID, "")
-
-			recordZones, err := endpointsToLibdnsZoneRecords([]*externaldns.Endpoint{endpoint}, p.zones)
-			if err != nil {
-				return nil, err
-			}
-			// there should be only one item in the map
-			for zone, records := range recordZones {
-				// there will be only one records
-				for _, record := range records {
-					if cachedRecords, exist := p.cachedZonesRecords[zone]; exist {
-						for _, zoneRecord := range cachedRecords {
-							if record.Name == zoneRecord.Name && record.Type == zoneRecord.Type {
-								log.Ctx(ctx).Debug().
-									Any("record", record).
-									Any("record_zone", zoneRecord).
-									Msg("Set record ID for endpoint")
-								endpoint.SetProviderSpecificProperty(identifierLabelID, zoneRecord.ID)
-							}
-						}
-					}
-				}
-			}
-		}
+		zoneRecords[zone] = append(zoneRecords[zone], records...)
 	}
 
+	return zoneRecords, nil
+}
+
+func (p *WebhookProvider) AdjustEndpoints(_ context.Context, endpoints externaldns.Endpoints) (externaldns.Endpoints, error) {
 	return endpoints, nil
 }
 

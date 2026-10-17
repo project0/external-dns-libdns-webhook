@@ -9,27 +9,19 @@ Select a provider with `LIBDNS_PROVIDER_NAME` and pass its configuration as JSON
 | [alidns](#alidns) | AliDNS is a DNS hosting service by Alibaba Cloud. |
 | [autodns](#autodns) | AutoDNS is a DNS management service by InterNetX. |
 | [bunny](#bunny) | BunnyCDN provides content delivery network services. |
-| [ddnss](#ddnss) | DDNSS provides free dynamic DNS services. |
 | [desec](#desec) | deSEC is a free DNS hosting service. |
-| [dinahosting](#dinahosting) | Dinahosting provides web hosting and domain services. |
 | [directadmin](#directadmin) | DirectAdmin is a web hosting control panel. |
 | [dnsexit](#dnsexit) | DNSExit provides DNS hosting services. |
 | [dnsimple](#dnsimple) | DNSimple provides DNS hosting services. |
 | [dnsmadeeasy](#dnsmadeeasy) | DNS Made Easy provides enterprise DNS services. |
-| [dnspod](#dnspod) | DNSPod provides DNS hosting services. |
 | [dnsupdate](#dnsupdate) | DNSUpdate provides dynamic DNS services. |
-| [dreamhost](#dreamhost) | DreamHost provides web hosting and domain services. |
 | [duckdns](#duckdns) | DuckDNS provides free dynamic DNS services. |
 | [dynu](#dynu) | Dynu provides dynamic DNS services. |
 | [dynv6](#dynv6) | Dynv6 provides free dynamic DNS services. |
 | [easydns](#easydns) | EasyDNS provides DNS hosting services. |
 | [he](#he) | Hurricane Electric provides DNS hosting services. |
-| [hexonet](#hexonet) | HEXONET provides domain registration and DNS services. |
-| [hosttech](#hosttech) | Hosttech provides web hosting and domain services. |
 | [infomaniak](#infomaniak) | Infomaniak provides web hosting and domain services. |
 | [inwx](#inwx) | INWX is a domain registrar and DNS hosting provider. |
-| [katapult](#katapult) | Katapult provides cloud infrastructure services. |
-| [leaseweb](#leaseweb) | Leaseweb provides cloud hosting and domain services. |
 | [loopia](#loopia) | Loopia provides web hosting and domain services. |
 | [luadns](#luadns) | LuaDNS provides DNS hosting services. |
 | [mailinabox](#mailinabox) | Mail-in-a-Box is an easy-to-deploy mail server. |
@@ -45,7 +37,6 @@ Select a provider with `LIBDNS_PROVIDER_NAME` and pass its configuration as JSON
 | [rfc2136](#rfc2136) | RFC2136 is a standard for dynamic DNS updates. |
 | [selectel](#selectel) | Selectel provides cloud infrastructure services. |
 | [timeweb](#timeweb) | Timeweb provides web hosting and domain services. |
-| [totaluptime](#totaluptime) | Total Uptime provides cloud-based DNS services. |
 | [transip](#transip) | TransIP provides web hosting and domain services. |
 | [vercel](#vercel) | Vercel provides web hosting and domain services. |
 
@@ -60,10 +51,11 @@ AliDNS is a DNS hosting service by Alibaba Cloud.
 | `access_key_id` | `string` | The API Key ID Required by Aliyun's for accessing the Aliyun's API |
 | `access_key_secret` | `string` | The API Key Secret Required by Aliyun's for accessing the Aliyun's API |
 | `region_id` | `string` | Optional for identifing the region of the Aliyun's Service,The default is zh-hangzhou |
+| `security_token` | `string` | The Security Token Required If you enabled the Aliyun's STS(SecurityToken) for accessing the Aliyun's API |
 
 ```sh
 LIBDNS_PROVIDER_NAME=alidns
-LIBDNS_PROVIDER_CONFIG='{"access_key_id":"","access_key_secret":"","region_id":""}'
+LIBDNS_PROVIDER_CONFIG='{"access_key_id":"","access_key_secret":"","region_id":"","security_token":""}'
 ```
 
 ## autodns
@@ -74,15 +66,13 @@ AutoDNS is a DNS management service by InterNetX.
 
 | Key | Type | Description |
 | --- | --- | --- |
-| `username` | `string` |  |
-| `password` | `string` |  |
-| `Endpoint` | `string` |  |
-| `context` | `string` |  |
-| `primary` | `string` |  |
+| `Client` | `*sdk.SDK` |  |
+| `origin` | `*string` | Optional fields to skip zone lookup if already known |
+| `nameserver` | `*string` |  |
 
 ```sh
 LIBDNS_PROVIDER_NAME=autodns
-LIBDNS_PROVIDER_CONFIG='{"Endpoint":"","context":"","password":"","primary":"","username":""}'
+LIBDNS_PROVIDER_CONFIG='{"Client":null,"nameserver":null,"origin":null}'
 ```
 
 ## bunny
@@ -101,23 +91,6 @@ LIBDNS_PROVIDER_NAME=bunny
 LIBDNS_PROVIDER_CONFIG='{"access_key":"","debug":false}'
 ```
 
-## ddnss
-
-[https://ddnss.de/](https://ddnss.de/) · [github.com/libdns/ddnss](https://pkg.go.dev/github.com/libdns/ddnss)
-
-DDNSS provides free dynamic DNS services.
-
-| Key | Type | Description |
-| --- | --- | --- |
-| `api_token` | `string` |  |
-| `username` | `string` |  |
-| `password` | `string` |  |
-
-```sh
-LIBDNS_PROVIDER_NAME=ddnss
-LIBDNS_PROVIDER_CONFIG='{"api_token":"","password":"","username":""}'
-```
-
 ## desec
 
 [https://desec.io/](https://desec.io/) · [github.com/libdns/desec](https://pkg.go.dev/github.com/libdns/desec)
@@ -133,22 +106,6 @@ LIBDNS_PROVIDER_NAME=desec
 LIBDNS_PROVIDER_CONFIG='{"token":""}'
 ```
 
-## dinahosting
-
-[https://dinahosting.com/](https://dinahosting.com/) · [github.com/libdns/dinahosting](https://pkg.go.dev/github.com/libdns/dinahosting)
-
-Dinahosting provides web hosting and domain services.
-
-| Key | Type | Description |
-| --- | --- | --- |
-| `username` | `string` |  |
-| `password` | `string` |  |
-
-```sh
-LIBDNS_PROVIDER_NAME=dinahosting
-LIBDNS_PROVIDER_CONFIG='{"password":"","username":""}'
-```
-
 ## directadmin
 
 [https://www.directadmin.com/](https://www.directadmin.com/) · [github.com/libdns/directadmin](https://pkg.go.dev/github.com/libdns/directadmin)
@@ -159,13 +116,12 @@ DirectAdmin is a web hosting control panel.
 | --- | --- | --- |
 | `host` | `string` | ServerURL should be the hostname (with port if necessary) of the DirectAdmin instance you are trying to use |
 | `user` | `string` | User should be the DirectAdmin username that the Login Key is created under |
-| `login_key` | `string` | LoginKey is used for authentication The key will need two permissions: `CMD_API_SHOW_DOMAINS` `CMD_API_DNS_CONTROL` Unless you are only using `GetRecords()`, in which case `CMD_API_DNS_CONTROL` can be omitted |
+| `login_key` | `string` | LoginKey is used for authentication The key will need two permissions: `CMD_API_SHOW_DOMAINS` - Required for automatic zone detection `CMD_API_DNS_CONTROL` - Required for DNS record management Both permissions are required for all operations as the provider uses automatic zone detection to handle subdomains correctly |
 | `insecure_requests` | `bool` | InsecureRequests is an optional parameter used to ignore SSL related errors on the DirectAdmin host |
-| `debug` | `string` | Debug - can set this to stdout or stderr to dump debugging information about the API interaction with powerdns. This will dump your auth token in plain text so be careful. |
 
 ```sh
 LIBDNS_PROVIDER_NAME=directadmin
-LIBDNS_PROVIDER_CONFIG='{"debug":"","host":"","insecure_requests":false,"login_key":"","user":""}'
+LIBDNS_PROVIDER_CONFIG='{"host":"","insecure_requests":false,"login_key":"","user":""}'
 ```
 
 ## dnsexit
@@ -177,10 +133,13 @@ DNSExit provides DNS hosting services.
 | Key | Type | Description |
 | --- | --- | --- |
 | `api_key` | `string` |  |
+| `zone` | `string` |  |
+| `RestyClient` | `*resty.Client` | optional, for testing |
+| `update_url` | `string` | optional, for testing |
 
 ```sh
 LIBDNS_PROVIDER_NAME=dnsexit
-LIBDNS_PROVIDER_CONFIG='{"api_key":""}'
+LIBDNS_PROVIDER_CONFIG='{"RestyClient":null,"api_key":"","update_url":"","zone":""}'
 ```
 
 ## dnsimple
@@ -217,21 +176,6 @@ LIBDNS_PROVIDER_NAME=dnsmadeeasy
 LIBDNS_PROVIDER_CONFIG='{"api_endpoint":null,"api_key":"","secret_key":""}'
 ```
 
-## dnspod
-
-[https://www.dnspod.com/](https://www.dnspod.com/) · [github.com/libdns/dnspod](https://pkg.go.dev/github.com/libdns/dnspod)
-
-DNSPod provides DNS hosting services.
-
-| Key | Type | Description |
-| --- | --- | --- |
-| `auth_token` | `string` | APIToken is the DNSPOD API token - see https://www.dnspod.cn/docs/info.html#common-parameters |
-
-```sh
-LIBDNS_PROVIDER_NAME=dnspod
-LIBDNS_PROVIDER_CONFIG='{"auth_token":""}'
-```
-
 ## dnsupdate
 
 [https://dnsupdate.org/](https://dnsupdate.org/) · [github.com/libdns/dnsupdate](https://pkg.go.dev/github.com/libdns/dnsupdate)
@@ -241,25 +185,11 @@ DNSUpdate provides dynamic DNS services.
 | Key | Type | Description |
 | --- | --- | --- |
 | `addr` | `string` | DNS server address |
+| `tsig` | `string` | Transaction signature, with format "algo:name:secret" |
 
 ```sh
 LIBDNS_PROVIDER_NAME=dnsupdate
-LIBDNS_PROVIDER_CONFIG='{"addr":""}'
-```
-
-## dreamhost
-
-[https://www.dreamhost.com/](https://www.dreamhost.com/) · [github.com/libdns/dreamhost](https://pkg.go.dev/github.com/libdns/dreamhost)
-
-DreamHost provides web hosting and domain services.
-
-| Key | Type | Description |
-| --- | --- | --- |
-| `api_key` | `string` |  |
-
-```sh
-LIBDNS_PROVIDER_NAME=dreamhost
-LIBDNS_PROVIDER_CONFIG='{"api_key":""}'
+LIBDNS_PROVIDER_CONFIG='{"addr":"","tsig":""}'
 ```
 
 ## duckdns
@@ -270,12 +200,13 @@ DuckDNS provides free dynamic DNS services.
 
 | Key | Type | Description |
 | --- | --- | --- |
-| `api_token` | `string` |  |
-| `override_domain` | `string` |  |
+| `api_token` | `string` | The DuckDNS API token. |
+| `override_domain` | `string` | An override to the domain, useful if the domain being managed does not belong to DuckDNS, and instead is pointing to DuckDNS using a CNAME record. This allows using DuckDNS' API to manage records for other domains which have worse or no programmable APIs. |
+| `resolver` | `string` | An optional resolver to use when doing DNS queries to load the current records. By default, 8.8.8.8:53 is used, i.e. Google's public DNS server. |
 
 ```sh
 LIBDNS_PROVIDER_NAME=duckdns
-LIBDNS_PROVIDER_CONFIG='{"api_token":"","override_domain":""}'
+LIBDNS_PROVIDER_CONFIG='{"api_token":"","override_domain":"","resolver":""}'
 ```
 
 ## dynu
@@ -343,38 +274,6 @@ LIBDNS_PROVIDER_NAME=he
 LIBDNS_PROVIDER_CONFIG='{"api_key":""}'
 ```
 
-## hexonet
-
-[https://www.hexonet.net/](https://www.hexonet.net/) · [github.com/libdns/hexonet](https://pkg.go.dev/github.com/libdns/hexonet)
-
-HEXONET provides domain registration and DNS services.
-
-| Key | Type | Description |
-| --- | --- | --- |
-| `username` | `string` |  |
-| `password` | `string` |  |
-| `debug` | `string` | Debug - can set this to stdout or stderr to dump debugging information about the API interaction with hexonet. This will dump your auth token in plain text so be careful. |
-
-```sh
-LIBDNS_PROVIDER_NAME=hexonet
-LIBDNS_PROVIDER_CONFIG='{"debug":"","password":"","username":""}'
-```
-
-## hosttech
-
-[https://www.hosttech.ch/](https://www.hosttech.ch/) · [github.com/libdns/hosttech](https://pkg.go.dev/github.com/libdns/hosttech)
-
-Hosttech provides web hosting and domain services.
-
-| Key | Type | Description |
-| --- | --- | --- |
-| `api_token` | `string` |  |
-
-```sh
-LIBDNS_PROVIDER_NAME=hosttech
-LIBDNS_PROVIDER_CONFIG='{"api_token":""}'
-```
-
 ## infomaniak
 
 [https://www.infomaniak.com/](https://www.infomaniak.com/) · [github.com/libdns/infomaniak](https://pkg.go.dev/github.com/libdns/infomaniak)
@@ -406,36 +305,6 @@ INWX is a domain registrar and DNS hosting provider.
 ```sh
 LIBDNS_PROVIDER_NAME=inwx
 LIBDNS_PROVIDER_CONFIG='{"endpoint_url":"","password":"","shared_secret":"","username":""}'
-```
-
-## katapult
-
-[https://katapult.io/](https://katapult.io/) · [github.com/libdns/katapult](https://pkg.go.dev/github.com/libdns/katapult)
-
-Katapult provides cloud infrastructure services.
-
-| Key | Type | Description |
-| --- | --- | --- |
-| `api_token` | `string` |  |
-
-```sh
-LIBDNS_PROVIDER_NAME=katapult
-LIBDNS_PROVIDER_CONFIG='{"api_token":""}'
-```
-
-## leaseweb
-
-[https://www.leaseweb.com/](https://www.leaseweb.com/) · [github.com/libdns/leaseweb](https://pkg.go.dev/github.com/libdns/leaseweb)
-
-Leaseweb provides cloud hosting and domain services.
-
-| Key | Type | Description |
-| --- | --- | --- |
-| `api_token` | `string` | Leasewebs API key. Generate one in the Leaseweb customer portal -> Administration -> API Key |
-
-```sh
-LIBDNS_PROVIDER_NAME=leaseweb
-LIBDNS_PROVIDER_CONFIG='{"api_token":""}'
 ```
 
 ## loopia
@@ -482,10 +351,11 @@ Mail-in-a-Box is an easy-to-deploy mail server.
 | `api_url` | `string` | APIURL is the URL provided by the mailinabox admin interface, found on your box here: https://box.[your-domain.com]/admin#custom_dns https://box.[your-domain.com]/admin/dns/custom |
 | `email_address` | `string` | EmailAddress of an admin account. It's recommended that a dedicated account be created especially for managing DNS. |
 | `password` | `string` | Password of the admin account that corresponds to the email. |
+| `totp_secret` | `string` | TOTP Secret Key of the admin account. Needed if multi factor authentication is enabled. |
 
 ```sh
 LIBDNS_PROVIDER_NAME=mailinabox
-LIBDNS_PROVIDER_CONFIG='{"api_url":"","email_address":"","password":""}'
+LIBDNS_PROVIDER_CONFIG='{"api_url":"","email_address":"","password":"","totp_secret":""}'
 ```
 
 ## metaname
@@ -610,7 +480,7 @@ Njalla provides privacy-focused domain registration and DNS services.
 
 | Key | Type | Description |
 | --- | --- | --- |
-| `api_token` | `string` |  |
+| `api_token` | `string` | APIToken is the Njalla API token used for authentication. Tokens are created from the Njalla account settings page. The token needs the add-record, edit-record, remove-record, and list-records methods. A token created with Njalla's "acme" option covers the ACME DNS-01 challenge, but restricts listing to the _acme-challenge prefix. |
 
 ```sh
 LIBDNS_PROVIDER_NAME=njalla
@@ -659,16 +529,17 @@ Selectel provides cloud infrastructure services.
 
 | Key | Type | Description |
 | --- | --- | --- |
-| `user` | `string` |  |
-| `password` | `string` |  |
-| `account_id` | `string` |  |
-| `project_name` | `string` |  |
-| `KeystoneToken` | `string` |  |
-| `ZonesCache` | `map[string]string` |  |
+| `user` | `string` | User is the Selectel service-user login (required). |
+| `password` | `string` | Password is the Selectel service-user password (required). |
+| `account_id` | `string` | AccountId is the Selectel account ID (required). |
+| `project_name` | `string` | ProjectName is the Selectel project name that owns the DNS zones (required). |
+| `enable_debug_logging` | `bool` | EnableDebugLogging enables verbose DEBUG-level log output for all DNS operations. INFO and ERROR messages are always emitted when a Logger is set (or automatically created). When Logger is nil and EnableDebugLogging is true, a logger writing to os.Stderr is created automatically. |
+| `HTTPRequestRetryConfiguration` | `HTTPRequestRetryConfiguration` | HTTPRequestRetryConfiguration controls retry behaviour for transient HTTP failures. A zero value enables sensible defaults; see CreateDefaultHTTPRequestRetryConfiguration. |
+| `Logger` | `Logger` | Logger receives diagnostic messages. When nil and EnableDebugLogging is true, a *log.Logger writing to os.Stderr is created automatically. When nil and EnableDebugLogging is false, the provider is completely silent. Integrations (e.g. caddy-dns/selectel) may inject a structured logger here. |
 
 ```sh
 LIBDNS_PROVIDER_NAME=selectel
-LIBDNS_PROVIDER_CONFIG='{"KeystoneToken":"","ZonesCache":null,"account_id":"","password":"","project_name":"","user":""}'
+LIBDNS_PROVIDER_CONFIG='{"HTTPRequestRetryConfiguration":null,"Logger":null,"account_id":"","enable_debug_logging":false,"password":"","project_name":"","user":""}'
 ```
 
 ## timeweb
@@ -687,22 +558,6 @@ LIBDNS_PROVIDER_NAME=timeweb
 LIBDNS_PROVIDER_CONFIG='{"ApiToken":"","ApiURL":""}'
 ```
 
-## totaluptime
-
-[https://totaluptime.com/](https://totaluptime.com/) · [github.com/libdns/totaluptime](https://pkg.go.dev/github.com/libdns/totaluptime)
-
-Total Uptime provides cloud-based DNS services.
-
-| Key | Type | Description |
-| --- | --- | --- |
-| `username` | `string` |  |
-| `password` | `string` |  |
-
-```sh
-LIBDNS_PROVIDER_NAME=totaluptime
-LIBDNS_PROVIDER_CONFIG='{"password":"","username":""}'
-```
-
 ## transip
 
 [https://www.transip.eu/](https://www.transip.eu/) · [github.com/libdns/transip](https://pkg.go.dev/github.com/libdns/transip)
@@ -711,12 +566,19 @@ TransIP provides web hosting and domain services.
 
 | Key | Type | Description |
 | --- | --- | --- |
-| `account_name` | `string` |  |
-| `private_key_path` | `string` |  |
+| `login` | `string` | AuthLogin the login used for authentication |
+| `read_only` | `bool` | AuthReadOnly set to true to create readonly keys |
+| `not_global_key` | `bool` | AuthNotGlobalKey can be set to true to generate keys that are restricted to clients with IP addresses included in the whitelist. |
+| `expiration_time` | `client.ExpirationTime` | AuthExpirationTime specifies the time-to-live for an authentication token. |
+| `private_key` | `string` | PrivateKey can be generated here: https://www.transip.nl/cp/account/api It is used for authentication and can be provided either as a string containing the key or as a filepath to a file containing the private key. |
+| `debug_level` | `provider.OutputLevel` | DebugLevel sets the verbosity for logging API requests and responses. |
+| `base_uri` | `*ApiBaseUri` | BaseURI is the base URI used for API calls. Default: https://api.transip.nl/v6/ |
+| `token_storage` | `string` | TokenStorage specifies where tokens are stored and can be reused until they expire. It can be set to: - "memory" for in-memory storage, - a file path for storing keys on disk - empty, in which case keys will be stored in a "transip" directory in the user's temp folder. |
+| `client_control_mode` | `client.ControleMode` | ClientControl has two modes: - RecordLevelControl (default): updates records individually. - FullZoneControl: replaces the entire zone in a single call. While this is much faster, it can encounter race conditions if another program modifies the zone simultaneously, as updates may be overwritten. |
 
 ```sh
 LIBDNS_PROVIDER_NAME=transip
-LIBDNS_PROVIDER_CONFIG='{"account_name":"","private_key_path":""}'
+LIBDNS_PROVIDER_CONFIG='{"base_uri":null,"client_control_mode":null,"debug_level":null,"expiration_time":null,"login":"","not_global_key":false,"private_key":"","read_only":false,"token_storage":""}'
 ```
 
 ## vercel
