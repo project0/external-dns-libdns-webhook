@@ -1,6 +1,6 @@
 package main
 
-//go:generate go run ./internal/generator/generate.go code providers.json internal/libdnsregistry/registry.go
+//go:generate go run ./internal/generator/generate.go providers.json internal/libdnsregistry/registry.go PROVIDERS.md
 import (
 	"context"
 	"errors"

@@ -1,4 +1,4 @@
-.PHONY: build test generate lint
+.PHONY: build test generate check-generate lint
 
 build:
 	goreleaser release --snapshot  --clean
@@ -8,6 +8,9 @@ test:
 
 generate:
 	go generate ./...
+
+check-generate: generate
+	git diff --exit-code -- internal/libdnsregistry/registry.go PROVIDERS.md
 
 lint:
 	go mod tidy
