@@ -126,7 +126,7 @@ func TestCreateRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	stored := mem.rrs(zone)
+	stored := mem.rrs(t, zone)
 	for _, want := range []libdns.RR{
 		{Name: "@", Type: "MX", TTL: time.Hour, Data: "10 mail.example.com."},
 		{Name: "_sip._tcp", Type: "SRV", TTL: 5 * time.Minute, Data: "10 5 5060 sip.example.com."},

@@ -115,7 +115,7 @@ func TestNoOpPlanAfterApply(t *testing.T) {
 	}
 
 	wantOrg := []libdns.RR{soa, {Name: "deep", Type: "TXT", TTL: time.Hour, Data: "plain text"}}
-	if got := mem.rrs("sub.example.org."); !slices.Equal(got, wantOrg) {
+	if got := mem.rrs(t, "sub.example.org."); !slices.Equal(got, wantOrg) {
 		t.Errorf("sub.example.org records %+v, want %+v", got, wantOrg)
 	}
 
@@ -139,8 +139,7 @@ func TestNoOpPlanWithProviderMinTTL(t *testing.T) {
 	t.Parallel()
 
 	// emulates a provider raising TTLs to its minimum, like INWX does with 300 seconds
-	mem := newMemoryProvider(zone)
-	mem.minTTL = 5 * time.Minute
+	mem := newMemoryProvider(zone).withMinTTL(5 * time.Minute)
 	webhook := newWebhook(t, []string{"example.com"}, mem, provider.Options{DefaultTTL: time.Hour, MinTTL: 5 * time.Minute})
 
 	adjusted, err := webhook.AdjustEndpoints(t.Context(), externaldns.Endpoints{ep("www.example.com", "A", 60, "192.0.2.1")})
@@ -182,7 +181,7 @@ func TestApplyChangesReplaceAWithCNAME(t *testing.T) {
 	}
 
 	want := []libdns.RR{{Name: "www", Type: "CNAME", TTL: time.Hour, Data: "example.com."}}
-	if got := mem.rrs(zone); !slices.Equal(got, want) {
+	if got := mem.rrs(t, zone); !slices.Equal(got, want) {
 		t.Errorf("records %+v, want %+v", got, want)
 	}
 }
@@ -251,7 +250,7 @@ func TestApplyChangesUpdate(t *testing.T) {
 
 			var got []libdns.RR
 
-			for _, rr := range mem.rrs(zone) {
+			for _, rr := range mem.rrs(t, zone) {
 				if rr.Name == "other" {
 					continue
 				}
@@ -271,7 +270,7 @@ func TestApplyChangesUpdate(t *testing.T) {
 				t.Errorf("got %d records, want %d: %+v", len(got), len(tc.want), got)
 			}
 
-			if !slices.Contains(mem.rrs(zone), seed[3]) {
+			if !slices.Contains(mem.rrs(t, zone), seed[3]) {
 				t.Error("unrelated record was modified")
 			}
 		})
@@ -297,7 +296,7 @@ func TestApplyChangesDeleteListedTargetsOnly(t *testing.T) {
 	}
 
 	want := []libdns.RR{{Name: "sub", Type: "NS", TTL: time.Hour, Data: "ns2.example.net."}}
-	if got := mem.rrs(zone); !slices.Equal(got, want) {
+	if got := mem.rrs(t, zone); !slices.Equal(got, want) {
 		t.Errorf("records %+v, want %+v", got, want)
 	}
 }
@@ -316,7 +315,7 @@ func TestApplyChangesCreateIsIdempotent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got := mem.rrs(zone); len(got) != 2 {
+	if got := mem.rrs(t, zone); len(got) != 2 {
 		t.Errorf("expected 2 records, got %+v", got)
 	}
 }
@@ -338,7 +337,7 @@ func TestApplyChangesPartialFailure(t *testing.T) {
 		t.Fatal("expected error for unsupported endpoints")
 	}
 
-	if got := mem.rrs(zone); len(got) != 1 {
+	if got := mem.rrs(t, zone); len(got) != 1 {
 		t.Errorf("valid endpoint must be applied, got %+v", got)
 	}
 }

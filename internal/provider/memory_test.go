@@ -2,155 +2,92 @@ package provider_test
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"slices"
-	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/libdns/libdns"
+	"github.com/project0/external-dns-libdns-webhook/internal/fakememory"
 )
 
-var errCNAMEConflict = errors.New("CNAME and other data")
-
-// memoryProvider is an in-memory libdns provider implementing the libdns v1 semantics.
-// Like a real DNS server it rejects CNAME records next to other records of the same name.
+// memoryProvider wraps the fakememory provider and records the called methods.
 type memoryProvider struct {
-	mu    sync.Mutex
-	zones map[string][]libdns.RR
-	// minTTL raises lower TTLs of appended records
-	minTTL time.Duration
+	*fakememory.Provider
+
+	mu sync.Mutex
 	// ops records the called methods, e.g. "delete example.com."
 	ops []string
 }
 
 func newMemoryProvider(zones ...string) *memoryProvider {
-	m := &memoryProvider{zones: map[string][]libdns.RR{}}
-	for _, zone := range zones {
-		m.zones[zone] = nil
-	}
+	return &memoryProvider{Provider: &fakememory.Provider{Zones: zones}}
+}
+
+func (m *memoryProvider) withMinTTL(ttl time.Duration) *memoryProvider {
+	m.MinTTL = int(ttl.Seconds())
 
 	return m
+}
+
+func (m *memoryProvider) record(op, zone string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.ops = append(m.ops, op+" "+zone)
 }
 
 func (m *memoryProvider) seed(t *testing.T, zone string, rrs ...libdns.RR) {
 	t.Helper()
 
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	m.zones[zone] = append(m.zones[zone], rrs...)
-}
-
-func (m *memoryProvider) rrs(zone string) []libdns.RR {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	return slices.Clone(m.zones[zone])
-}
-
-func (m *memoryProvider) GetRecords(_ context.Context, zone string) ([]libdns.Record, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	rrs, ok := m.zones[zone]
-	if !ok {
-		return nil, errors.New("zone not found: " + zone)
-	}
-
 	records := make([]libdns.Record, 0, len(rrs))
-
 	for _, rr := range rrs {
-		record, err := rr.Parse()
-		if err != nil {
-			return nil, fmt.Errorf("parse %s: %w", rr.Name, err)
-		}
+		records = append(records, rr)
+	}
 
-		records = append(records, record)
+	if _, err := m.Provider.AppendRecords(t.Context(), zone, records); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func (m *memoryProvider) rrs(t *testing.T, zone string) []libdns.RR {
+	t.Helper()
+
+	records, err := m.GetRecords(t.Context(), zone)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rrs := make([]libdns.RR, 0, len(records))
+	for _, record := range records {
+		rrs = append(rrs, record.RR())
+	}
+
+	return rrs
+}
+
+func (m *memoryProvider) AppendRecords(ctx context.Context, zone string, records []libdns.Record) ([]libdns.Record, error) {
+	m.record("append", zone)
+
+	return wrap(m.Provider.AppendRecords(ctx, zone, records))
+}
+
+func (m *memoryProvider) SetRecords(ctx context.Context, zone string, records []libdns.Record) ([]libdns.Record, error) {
+	m.record("set", zone)
+
+	return wrap(m.Provider.SetRecords(ctx, zone, records))
+}
+
+func (m *memoryProvider) DeleteRecords(ctx context.Context, zone string, records []libdns.Record) ([]libdns.Record, error) {
+	m.record("delete", zone)
+
+	return wrap(m.Provider.DeleteRecords(ctx, zone, records))
+}
+
+func wrap(records []libdns.Record, err error) ([]libdns.Record, error) {
+	if err != nil {
+		return records, fmt.Errorf("fakememory: %w", err)
 	}
 
 	return records, nil
-}
-
-func (m *memoryProvider) AppendRecords(_ context.Context, zone string, records []libdns.Record) ([]libdns.Record, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	m.ops = append(m.ops, "append "+zone)
-
-	for _, record := range records {
-		rr := record.RR()
-		for _, existing := range m.zones[zone] {
-			if existing.Name == rr.Name && existing.Type != rr.Type && (existing.Type == "CNAME" || rr.Type == "CNAME") {
-				return nil, errCNAMEConflict
-			}
-		}
-
-		rr.TTL = max(rr.TTL, m.minTTL)
-		m.zones[zone] = append(m.zones[zone], rr)
-	}
-
-	return records, nil
-}
-
-func (m *memoryProvider) SetRecords(_ context.Context, zone string, records []libdns.Record) ([]libdns.Record, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	m.ops = append(m.ops, "set "+zone)
-
-	for _, record := range records {
-		rr := record.RR()
-		m.zones[zone] = slices.DeleteFunc(m.zones[zone], func(existing libdns.RR) bool {
-			return existing.Name == rr.Name && existing.Type == rr.Type
-		})
-	}
-
-	for _, record := range records {
-		m.zones[zone] = append(m.zones[zone], record.RR())
-	}
-
-	return records, nil
-}
-
-func (m *memoryProvider) DeleteRecords(_ context.Context, zone string, records []libdns.Record) ([]libdns.Record, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	m.ops = append(m.ops, "delete "+zone)
-
-	var deleted []libdns.Record
-
-	for _, record := range records {
-		rr := record.RR()
-		m.zones[zone] = slices.DeleteFunc(m.zones[zone], func(existing libdns.RR) bool {
-			match := existing.Name == rr.Name &&
-				(rr.Type == "" || rr.Type == existing.Type) &&
-				(rr.TTL == 0 || rr.TTL == existing.TTL) &&
-				(rr.Data == "" || rr.Data == existing.Data)
-			if match {
-				deleted = append(deleted, record)
-			}
-
-			return match
-		})
-	}
-
-	return deleted, nil
-}
-
-func (m *memoryProvider) ListZones(_ context.Context) ([]libdns.Zone, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	zones := make([]libdns.Zone, 0, len(m.zones))
-	for zone := range m.zones {
-		zones = append(zones, libdns.Zone{Name: zone})
-	}
-
-	slices.SortFunc(zones, func(a, b libdns.Zone) int { return strings.Compare(a.Name, b.Name) })
-
-	return zones, nil
 }

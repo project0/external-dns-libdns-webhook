@@ -19,6 +19,7 @@ Select a provider with `LIBDNS_PROVIDER_NAME` and pass its configuration as JSON
 | [dynu](#dynu) | Dynu provides dynamic DNS services. |
 | [dynv6](#dynv6) | Dynv6 provides free dynamic DNS services. |
 | [easydns](#easydns) | EasyDNS provides DNS hosting services. |
+| [fakememory](#fakememory) | In-memory fake provider for testing, records are lost on restart. |
 | [he](#he) | Hurricane Electric provides DNS hosting services. |
 | [infomaniak](#infomaniak) | Infomaniak provides web hosting and domain services. |
 | [inwx](#inwx) | INWX is a domain registrar and DNS hosting provider. |
@@ -257,6 +258,22 @@ EasyDNS provides DNS hosting services.
 ```sh
 LIBDNS_PROVIDER_NAME=easydns
 LIBDNS_PROVIDER_CONFIG='{"api_key":"","api_token":"","api_url":""}'
+```
+
+## fakememory
+
+[github.com/project0/external-dns-libdns-webhook/internal/fakememory](https://pkg.go.dev/github.com/project0/external-dns-libdns-webhook/internal/fakememory)
+
+In-memory fake provider for testing, records are lost on restart.
+
+| Key | Type | Description |
+| --- | --- | --- |
+| `zones` | `[]string` | Zones served by the provider, e.g. ["example.com"]. Records of other zones are rejected. |
+| `min_ttl` | `int` | MinTTL in seconds, lower TTLs are raised on append, emulating providers with a minimum TTL. |
+
+```sh
+LIBDNS_PROVIDER_NAME=fakememory
+LIBDNS_PROVIDER_CONFIG='{"min_ttl":0,"zones":[]}'
 ```
 
 ## he

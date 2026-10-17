@@ -196,5 +196,10 @@
     "package": "github.com/libdns/metaname",
     "description": "Metaname provides domain registration and DNS services.",
     "url": "https://metaname.net/"
+  },
+  {
+    "name": "fakememory",
+    "package": "github.com/project0/external-dns-libdns-webhook/internal/fakememory",
+    "description": "In-memory fake provider for testing, records are lost on restart."
   }
 ]

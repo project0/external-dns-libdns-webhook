@@ -360,6 +360,12 @@ func exampleConfig(fields []configField) string {
 		case "string":
 			example[field.Key] = ""
 		default:
+			if strings.HasPrefix(field.Type, "[]") {
+				example[field.Key] = []any{}
+
+				continue
+			}
+
 			example[field.Key] = nil
 		}
 	}

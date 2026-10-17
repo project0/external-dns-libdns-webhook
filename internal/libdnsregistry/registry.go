@@ -36,6 +36,7 @@ import (
 	libdnstimeweb "github.com/libdns/timeweb"
 	libdnstransip "github.com/libdns/transip"
 	libdnsvercel "github.com/libdns/vercel"
+	libdnsfakememory "github.com/project0/external-dns-libdns-webhook/internal/fakememory"
 )
 
 var registry = RegistryStore{
@@ -102,6 +103,11 @@ var registry = RegistryStore{
 	"easydns": &RegistryProvider{
 		Init: func(conf [][]byte) (Provider, error) {
 			return initProvider[libdnseasydns.Provider](conf)
+		},
+	},
+	"fakememory": &RegistryProvider{
+		Init: func(conf [][]byte) (Provider, error) {
+			return initProvider[libdnsfakememory.Provider](conf)
 		},
 	},
 	"he": &RegistryProvider{
