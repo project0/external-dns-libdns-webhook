@@ -145,16 +145,17 @@ func TestINWX(t *testing.T) {
 		endpoints[4] = ep(name("mx"), "MX", 300, "5 mail.example.com", "20 backup.example.com")
 		endpoints[5] = ep(name("_sip._tcp"), "SRV", 300, "10 5 5060 sip.example.com.")
 		endpoints[6] = ep(name("delegated"), "NS", 3600, "ns1.example.net", "ns3.example.net")
+		endpoints[3] = ep(name("cname"), "CNAME", 300, "www2.example.com")
 
 		return endpoints
 	}
 
-	t.Run("update targets, priorities and TTL", func(t *testing.T) {
+	t.Run("update targets, priorities, TTL and CNAME", func(t *testing.T) {
 		old, updates := initial(), updated()
 
 		apply(t, externaldns.Changes{
-			UpdateOld: externaldns.Endpoints{old[1], old[4], old[5], old[6]},
-			UpdateNew: externaldns.Endpoints{updates[1], updates[4], updates[5], updates[6]},
+			UpdateOld: externaldns.Endpoints{old[1], old[3], old[4], old[5], old[6]},
+			UpdateNew: externaldns.Endpoints{updates[1], updates[3], updates[4], updates[5], updates[6]},
 		}, updated())
 	})
 

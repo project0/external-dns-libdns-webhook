@@ -65,7 +65,7 @@ Services and ingresses only produce `A`, `AAAA` and `CNAME` records. Create othe
 ## Limitations
 
 - Routing policies (`set-identifier`) and provider specific properties (`webhook-*` annotations) are not supported and ignored.
-- Updates delete changed records before creating the new ones, they are not atomic.
+- Changed targets are created before the old ones are deleted, so a record set is never empty. CNAME target and TTL changes use the provider's `SetRecords`, which is atomic if the provider implements it. If `SetRecords` fails (e.g. INWX with multiple records), the webhook falls back to delete and create, which leaves the record set briefly empty.
 - Zones are discovered once on startup.
 
 ## Development

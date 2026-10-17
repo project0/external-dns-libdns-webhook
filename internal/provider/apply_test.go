@@ -362,3 +362,116 @@ func TestApplyChangesIgnoresOtherZones(t *testing.T) {
 		t.Errorf("expected only the MX record, got %+v", got)
 	}
 }
+
+func TestApplyChangesNeverEmpty(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		seed    []libdns.RR
+		new     *externaldns.Endpoint
+		failSet bool
+		wantOps []string
+		want    []libdns.RR
+	}{
+		{
+			name: "make-before-break A targets",
+			seed: []libdns.RR{
+				{Name: "www", Type: "A", TTL: 5 * time.Minute, Data: "192.0.2.1"},
+				{Name: "www", Type: "A", TTL: 5 * time.Minute, Data: "192.0.2.2"},
+			},
+			new:     ep("www.example.com", "A", 300, "192.0.2.2", "192.0.2.3"),
+			wantOps: []string{"append " + zone, "delete " + zone},
+			want: []libdns.RR{
+				{Name: "www", Type: "A", TTL: 5 * time.Minute, Data: "192.0.2.2"},
+				{Name: "www", Type: "A", TTL: 5 * time.Minute, Data: "192.0.2.3"},
+			},
+		},
+		{
+			name:    "make-before-break single MX priority",
+			seed:    []libdns.RR{{Name: "@", Type: "MX", TTL: time.Hour, Data: "10 mail.example.com."}},
+			new:     ep("example.com", "MX", 3600, "5 mail.example.com"),
+			wantOps: []string{"append " + zone, "delete " + zone},
+			want:    []libdns.RR{{Name: "@", Type: "MX", TTL: time.Hour, Data: "5 mail.example.com."}},
+		},
+		{
+			name:    "CNAME target with SetRecords",
+			seed:    []libdns.RR{{Name: "www", Type: "CNAME", TTL: time.Hour, Data: "old.example.com."}},
+			new:     ep("www.example.com", "CNAME", 3600, "new.example.com"),
+			wantOps: []string{"set " + zone},
+			want:    []libdns.RR{{Name: "www", Type: "CNAME", TTL: time.Hour, Data: "new.example.com."}},
+		},
+		{
+			name: "TTL with SetRecords",
+			seed: []libdns.RR{
+				{Name: "www", Type: "A", TTL: 5 * time.Minute, Data: "192.0.2.1"},
+				{Name: "www", Type: "A", TTL: 5 * time.Minute, Data: "192.0.2.2"},
+			},
+			new:     ep("www.example.com", "A", 600, "192.0.2.1", "192.0.2.2"),
+			wantOps: []string{"set " + zone},
+			want: []libdns.RR{
+				{Name: "www", Type: "A", TTL: 10 * time.Minute, Data: "192.0.2.1"},
+				{Name: "www", Type: "A", TTL: 10 * time.Minute, Data: "192.0.2.2"},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			mem := newMemoryProvider(zone)
+			mem.seed(t, zone, tc.seed...)
+			webhook := newWebhook(t, []string{"example.com"}, mem, provider.Options{DefaultTTL: time.Hour})
+
+			if err := webhook.ApplyChanges(t.Context(), &externaldns.Changes{UpdateNew: externaldns.Endpoints{tc.new}}); err != nil {
+				t.Fatal(err)
+			}
+
+			if !slices.Equal(mem.ops, tc.wantOps) {
+				t.Errorf("ops %v, want %v", mem.ops, tc.wantOps)
+			}
+
+			mem.assertNeverEmpty(t, tc.seed[0].Name, tc.seed[0].Type)
+
+			if got := mem.rrs(t, zone); !slices.Equal(slices.SortedFunc(slices.Values(got), compareRR), slices.SortedFunc(slices.Values(tc.want), compareRR)) {
+				t.Errorf("records %+v, want %+v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestApplyChangesSetRecordsFallback(t *testing.T) {
+	t.Parallel()
+
+	mem := newMemoryProvider(zone)
+	mem.failSet = true
+	mem.seed(t, zone,
+		libdns.RR{Name: "www", Type: "A", TTL: 5 * time.Minute, Data: "192.0.2.1"},
+		libdns.RR{Name: "www", Type: "A", TTL: 5 * time.Minute, Data: "192.0.2.2"},
+	)
+	webhook := newWebhook(t, []string{"example.com"}, mem, provider.Options{DefaultTTL: time.Hour})
+
+	err := webhook.ApplyChanges(t.Context(), &externaldns.Changes{
+		UpdateNew: externaldns.Endpoints{ep("www.example.com", "A", 600, "192.0.2.1", "192.0.2.2")},
+	})
+	if err != nil {
+		t.Fatalf("fallback must succeed: %v", err)
+	}
+
+	if want := []string{"set " + zone, "delete " + zone, "append " + zone}; !slices.Equal(mem.ops, want) {
+		t.Errorf("ops %v, want %v", mem.ops, want)
+	}
+
+	want := []libdns.RR{
+		{Name: "www", Type: "A", TTL: 10 * time.Minute, Data: "192.0.2.1"},
+		{Name: "www", Type: "A", TTL: 10 * time.Minute, Data: "192.0.2.2"},
+	}
+	if got := mem.rrs(t, zone); !slices.Equal(got, want) {
+		t.Errorf("records %+v, want %+v", got, want)
+	}
+}
+
+func compareRR(a, b libdns.RR) int {
+	return strings.Compare(a.Name+a.Type+a.Data, b.Name+b.Type+b.Data)
+}

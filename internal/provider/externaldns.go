@@ -186,9 +186,7 @@ type desiredSet struct {
 	replace bool
 }
 
-// ApplyChanges reconciles the changes against the current records of each zone. Instead of SetRecords,
-// whose implementations differ a lot between providers, only DeleteRecords and AppendRecords are used:
-// Deletes run first (required e.g. when replacing an A by a CNAME record), then the missing records are appended.
+// ApplyChanges reconciles the changes against the current records of each zone, see applyZone.
 // Deleted records are the ones returned by the provider, so exact matching works regardless of its data format.
 func (p *WebhookProvider) ApplyChanges(ctx context.Context, changes *externaldns.Changes) error {
 	zones := map[string]*zoneChanges{}
@@ -269,18 +267,17 @@ func (p *WebhookProvider) ApplyChanges(ctx context.Context, changes *externaldns
 	return errors.Join(errs...)
 }
 
-func (p *WebhookProvider) applyZone(ctx context.Context, zone string, changes *zoneChanges) error {
-	logger := log.Ctx(ctx).With().Str("zone", zone).Logger()
+type currentRecord struct {
+	record libdns.Record
+	target string
+	ttl    int64
+}
 
+// currentRecords returns the supported records of a zone by record set.
+func (p *WebhookProvider) currentRecords(ctx context.Context, zone string) (map[recordKey][]currentRecord, error) {
 	records, err := p.libdnsProvider.GetRecords(ctx, fqdn(zone))
 	if err != nil {
-		return fmt.Errorf("failed to retrieve records for zone %s: %w", zone, err)
-	}
-
-	type currentRecord struct {
-		record libdns.Record
-		target string
-		ttl    int64
+		return nil, fmt.Errorf("failed to retrieve records for zone %s: %w", zone, err)
 	}
 
 	current := map[recordKey][]currentRecord{}
@@ -300,12 +297,32 @@ func (p *WebhookProvider) applyZone(ctx context.Context, zone string, changes *z
 		current[key] = append(current[key], currentRecord{record: record, target: target, ttl: int64(rr.TTL.Seconds())})
 	}
 
-	var deletes, appends []libdns.Record
+	return current, nil
+}
+
+// zonePlan contains the provider calls of a zone in execution order.
+type zonePlan struct {
+	// earlyDeletes are deleted records, before anything else (e.g. an A record replaced by a CNAME)
+	earlyDeletes []libdns.Record
+	// sets are record sets replaced atomically, as they cannot be changed make-before-break
+	sets map[recordKey]desiredSet
+	// appends are missing records
+	appends []libdns.Record
+	// lateDeletes are replaced records, deleted after their replacement was appended
+	lateDeletes []libdns.Record
+}
+
+// planZone classifies the changes of a zone, record sets are never left empty where avoidable:
+//   - changed targets are appended before the old ones are deleted (make-before-break)
+//   - CNAME target and TTL changes cannot coexist with the old records and are replaced with SetRecords
+//   - creates only append missing targets
+func planZone(changes *zoneChanges, current map[recordKey][]currentRecord) (zonePlan, []error) {
+	plan := zonePlan{sets: map[recordKey]desiredSet{}}
 
 	for key, targets := range changes.deletes {
 		for _, cur := range current[key] {
 			if slices.Contains(targets, cur.target) {
-				deletes = append(deletes, cur.record)
+				plan.earlyDeletes = append(plan.earlyDeletes, cur.record)
 			}
 		}
 	}
@@ -313,17 +330,23 @@ func (p *WebhookProvider) applyZone(ctx context.Context, zone string, changes *z
 	var errs []error
 
 	for key, set := range changes.desired {
+		if set.replace && needsSet(key, set, current[key]) {
+			plan.sets[key] = set
+
+			continue
+		}
+
 		existing := map[string]bool{}
 
 		for _, cur := range current[key] {
 			wanted := slices.Contains(set.targets, cur.target)
 
 			switch {
-			case wanted && cur.ttl == set.ttl && !existing[cur.target]:
+			case wanted && !existing[cur.target]:
 				existing[cur.target] = true
-			case wanted || set.replace:
-				// TTL changed, duplicate or not desired anymore
-				deletes = append(deletes, cur.record)
+			case set.replace:
+				// duplicate or not desired anymore
+				plan.lateDeletes = append(plan.lateDeletes, cur.record)
 			}
 		}
 
@@ -342,27 +365,127 @@ func (p *WebhookProvider) applyZone(ctx context.Context, zone string, changes *z
 			continue
 		}
 
-		appends = append(appends, toAppend...)
+		plan.appends = append(plan.appends, toAppend...)
+	}
+
+	return plan, errs
+}
+
+// needsSet reports whether a record set update cannot be made before broken: a CNAME cannot coexist with
+// another CNAME, and all records of a set share one TTL.
+func needsSet(key recordKey, set desiredSet, current []currentRecord) bool {
+	for _, cur := range current {
+		if cur.ttl != set.ttl && slices.Contains(set.targets, cur.target) {
+			return true
+		}
+
+		if key.recordType == externaldns.RecordTypeCNAME && !slices.Contains(set.targets, cur.target) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// applyZone executes the zone plan: early deletes, atomic sets, appends, late deletes.
+func (p *WebhookProvider) applyZone(ctx context.Context, zone string, changes *zoneChanges) error {
+	logger := log.Ctx(ctx).With().Str("zone", zone).Logger()
+
+	current, err := p.currentRecords(ctx, zone)
+	if err != nil {
+		return err
+	}
+
+	plan, errs := planZone(changes, current)
+
+	if len(plan.earlyDeletes) > 0 {
+		logChanges(logger.Info(), plan.earlyDeletes).Msg("Deleting records")
+
+		if _, err := p.libdnsProvider.DeleteRecords(ctx, fqdn(zone), plan.earlyDeletes); err != nil {
+			// appending could conflict with records not deleted
+			return errors.Join(append(errs, fmt.Errorf("failed to delete records in zone %s: %w", zone, err))...)
+		}
+	}
+
+	if len(plan.sets) > 0 {
+		fallback, err := p.setRecords(ctx, zone, plan.sets)
+		if err != nil {
+			return errors.Join(append(errs, err)...)
+		}
+
+		plan.appends = append(plan.appends, fallback...)
+	}
+
+	if len(plan.appends) > 0 {
+		logChanges(logger.Info(), plan.appends).Msg("Creating records")
+
+		if _, err := p.libdnsProvider.AppendRecords(ctx, fqdn(zone), plan.appends); err != nil {
+			// keep the records to be replaced, nothing must go missing
+			return errors.Join(append(errs, fmt.Errorf("failed to create records in zone %s: %w", zone, err))...)
+		}
+	}
+
+	if len(plan.lateDeletes) > 0 {
+		logChanges(logger.Info(), plan.lateDeletes).Msg("Deleting replaced records")
+
+		if _, err := p.libdnsProvider.DeleteRecords(ctx, fqdn(zone), plan.lateDeletes); err != nil {
+			errs = append(errs, fmt.Errorf("failed to delete replaced records in zone %s: %w", zone, err))
+		}
+	}
+
+	return errors.Join(errs...)
+}
+
+// setRecords replaces the record sets with SetRecords. If the provider fails, the current records of the
+// sets are deleted and the desired records returned to be appended, which is not atomic.
+func (p *WebhookProvider) setRecords(ctx context.Context, zone string, sets map[recordKey]desiredSet) ([]libdns.Record, error) {
+	logger := log.Ctx(ctx).With().Str("zone", zone).Logger()
+
+	var records []libdns.Record
+
+	for key, set := range sets {
+		desired, err := endpointToRecords(&externaldns.Endpoint{
+			DNSName: key.name, RecordType: key.recordType, RecordTTL: set.ttl, Targets: set.targets,
+		}, set.name)
+		if err != nil {
+			return nil, err
+		}
+
+		records = append(records, desired...)
+	}
+
+	logChanges(logger.Info(), records).Msg("Replacing record sets")
+
+	_, err := p.libdnsProvider.SetRecords(ctx, fqdn(zone), records)
+	if err == nil {
+		return nil, nil
+	}
+
+	logger.Warn().Err(err).Msg("Failed to replace record sets, falling back to delete and create")
+
+	// the provider may have applied a part of the changes
+	current, err := p.currentRecords(ctx, zone)
+	if err != nil {
+		return nil, err
+	}
+
+	var deletes []libdns.Record
+
+	for key := range sets {
+		for _, cur := range current[key] {
+			deletes = append(deletes, cur.record)
+		}
 	}
 
 	if len(deletes) > 0 {
 		logChanges(logger.Info(), deletes).Msg("Deleting records")
 
 		if _, err := p.libdnsProvider.DeleteRecords(ctx, fqdn(zone), deletes); err != nil {
-			// appending could conflict with records not deleted
-			return errors.Join(append(errs, fmt.Errorf("failed to delete records in zone %s: %w", zone, err))...)
+			return nil, fmt.Errorf("failed to delete records in zone %s: %w", zone, err)
 		}
 	}
 
-	if len(appends) > 0 {
-		logChanges(logger.Info(), appends).Msg("Creating records")
-
-		if _, err := p.libdnsProvider.AppendRecords(ctx, fqdn(zone), appends); err != nil {
-			errs = append(errs, fmt.Errorf("failed to create records in zone %s: %w", zone, err))
-		}
-	}
-
-	return errors.Join(errs...)
+	return records, nil
 }
 
 func logChanges(event *zerolog.Event, records []libdns.Record) *zerolog.Event {
