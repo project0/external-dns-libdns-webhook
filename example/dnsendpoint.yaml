@@ -1,0 +1,32 @@
+# MX, SRV and NS records are created with the DNSEndpoint CRD (source "crd").
+# Priority, weight and port are part of the target, like in a zone file.
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: example
+spec:
+  endpoints:
+    # "<preference> <host>"
+    - dnsName: example.com
+      recordType: MX
+      recordTTL: 3600
+      targets:
+        - 10 mail.example.com
+        - 20 backup.example.com
+    # "<priority> <weight> <port> <host>.", the host must end with a dot
+    - dnsName: _sip._tcp.example.com
+      recordType: SRV
+      recordTTL: 300
+      targets:
+        - 10 5 5060 sip.example.com.
+    # delegate a sub domain
+    - dnsName: sub.example.com
+      recordType: NS
+      recordTTL: 86400
+      targets:
+        - ns1.example.net
+        - ns2.example.net
+    - dnsName: example.com
+      recordType: TXT
+      targets:
+        - v=spf1 mx -all

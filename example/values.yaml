@@ -1,0 +1,49 @@
+# Values for the external-dns Helm chart (>= 1.23.0, external-dns v0.23.0):
+#
+#   helm repo add external-dns https://kubernetes-sigs.github.io/external-dns/
+#   kubectl create secret generic external-dns-libdns \
+#     --from-literal=config='{"username":"...","password":"..."}'
+#   helm upgrade --install external-dns external-dns/external-dns -f example/values.yaml
+provider:
+  name: webhook
+  webhook:
+    image:
+      repository: ghcr.io/project0/external-dns-libdns-webhook
+      tag: latest # pin a released version
+    env:
+      - name: LIBDNS_PROVIDER_NAME
+        value: inwx
+      - name: LIBDNS_PROVIDER_CONFIG
+        valueFrom:
+          secretKeyRef:
+            name: external-dns-libdns
+            key: config
+      - name: LIBDNS_PROVIDER_ZONES
+        value: example.com
+      # INWX raises TTLs below 300 seconds
+      - name: LIBDNS_PROVIDER_MIN_TTL
+        value: 300s
+    # the chart probes /healthz on port 8080 (http-webhook), served by LIBDNS_WEBHOOK_HEALTH_LISTEN
+
+# the DNSEndpoint CRD is installed by the chart
+sources:
+  - crd
+  - service
+  - ingress
+
+policy: sync
+registry: txt
+txtOwnerId: my-cluster
+
+domainFilters:
+  - example.com
+
+# external-dns only manages A, AAAA and CNAME records by default
+managedRecordTypes:
+  - A
+  - AAAA
+  - CNAME
+  - TXT
+  - MX
+  - SRV
+  - NS
