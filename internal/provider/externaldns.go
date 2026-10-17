@@ -173,8 +173,8 @@ func (p *WebhookProvider) AdjustEndpoints(ctx context.Context, endpoints externa
 	return endpoints, nil
 }
 
-func (p *WebhookProvider) GetInitialization(_ context.Context) externaldns.Initialization {
-	return externaldns.Initialization{
-		Filters: p.zones,
+func (p *WebhookProvider) GetDomainFilter(_ context.Context) externaldns.DomainFilter {
+	return externaldns.DomainFilter{
+		Include: p.zones,
 	}
 }

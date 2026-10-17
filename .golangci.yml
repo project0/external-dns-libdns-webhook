@@ -104,6 +104,11 @@ linters:
         - operation
         - return
     varnamelen:
+      ignore-names:
+        - tc
+        - ep
+        - rr
+        - ok
       ignore-decls:
         - w http.ResponseWriter
         - r *http.Request

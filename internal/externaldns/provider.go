@@ -15,5 +15,6 @@ type Provider interface {
 	// unnecessary (potentially failing) changes. It may also modify other fields, add, or remove
 	// Endpoints. It is permitted to modify the supplied endpoints.
 	AdjustEndpoints(ctx context.Context, endpoints Endpoints) (updated Endpoints, err error)
-	GetInitialization(ctx context.Context) Initialization
+	// GetDomainFilter returns the domain filter negotiated with external-dns.
+	GetDomainFilter(ctx context.Context) DomainFilter
 }

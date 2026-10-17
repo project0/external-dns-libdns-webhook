@@ -5,6 +5,17 @@ import (
 	"strings"
 )
 
+const (
+	RecordTypeA     = "A"
+	RecordTypeAAAA  = "AAAA"
+	RecordTypeCNAME = "CNAME"
+	RecordTypeTXT   = "TXT"
+	RecordTypeSRV   = "SRV"
+	RecordTypeNS    = "NS"
+	RecordTypeMX    = "MX"
+	RecordTypeNAPTR = "NAPTR"
+)
+
 type (
 	Endpoints []*Endpoint
 	Endpoint  struct {
@@ -42,10 +53,16 @@ func NewEndpoint(dnsName, recordType string, targets ...string) *Endpoint {
 }
 
 // NewEndpointWithTTL initialization method to be used to create an endpoint with a TTL struct.
+// Like upstream external-dns, trailing dots are trimmed from targets except for TXT, SRV and NAPTR records.
 func NewEndpointWithTTL(dnsName, recordType string, ttl int64, targets ...string) *Endpoint {
 	cleanTargets := make([]string, len(targets))
 	for idx, target := range targets {
-		cleanTargets[idx] = strings.TrimSuffix(target, ".")
+		switch recordType {
+		case RecordTypeTXT, RecordTypeSRV, RecordTypeNAPTR:
+			cleanTargets[idx] = target
+		default:
+			cleanTargets[idx] = strings.TrimSuffix(target, ".")
+		}
 	}
 
 	return &Endpoint{

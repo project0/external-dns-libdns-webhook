@@ -16,7 +16,7 @@ const (
 func (s *Server) NegotiateHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
 
-	if err := json.NewEncoder(w).Encode(s.provider.GetInitialization(r.Context())); err != nil {
+	if err := json.NewEncoder(w).Encode(s.provider.GetDomainFilter(r.Context())); err != nil {
 		log.Ctx(r.Context()).Err(err).Msg("Failed to encode negotiate response")
 
 		http.Error(w, err.Error(), http.StatusInternalServerError)
