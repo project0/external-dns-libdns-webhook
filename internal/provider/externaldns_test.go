@@ -70,7 +70,7 @@ func TestRecordsGrouping(t *testing.T) {
 		libdns.RR{Name: "txt", Type: "TXT", TTL: 5 * time.Minute, Data: "heritage=external-dns,external-dns/owner=default"},
 	)
 
-	endpoints, err := provider.New([]string{"example.com"}, mem).Records(t.Context())
+	endpoints, err := provider.New([]string{"example.com"}, mem, provider.Options{DefaultTTL: time.Hour}).Records(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,7 +89,7 @@ func TestRecordsGrouping(t *testing.T) {
 func TestRecordsZoneError(t *testing.T) {
 	t.Parallel()
 
-	_, err := provider.New([]string{"example.com", "missing.org"}, newMemoryProvider(zone)).Records(t.Context())
+	_, err := provider.New([]string{"example.com", "missing.org"}, newMemoryProvider(zone), provider.Options{}).Records(t.Context())
 	if err == nil {
 		t.Fatal("expected error for unknown zone")
 	}
@@ -99,7 +99,7 @@ func TestCreateRoundTrip(t *testing.T) {
 	t.Parallel()
 
 	mem := newMemoryProvider(zone)
-	webhook := provider.New([]string{"example.com"}, mem)
+	webhook := provider.New([]string{"example.com"}, mem, provider.Options{DefaultTTL: time.Hour})
 
 	desired := externaldns.Endpoints{
 		ep("example.com", "MX", 3600, "10 mail.example.com", "20 backup.example.com."),

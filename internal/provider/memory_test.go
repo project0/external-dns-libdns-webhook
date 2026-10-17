@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/libdns/libdns"
 )
@@ -19,6 +20,8 @@ var errCNAMEConflict = errors.New("CNAME and other data")
 type memoryProvider struct {
 	mu    sync.Mutex
 	zones map[string][]libdns.RR
+	// minTTL raises lower TTLs of appended records
+	minTTL time.Duration
 	// ops records the called methods, e.g. "delete example.com."
 	ops []string
 }
@@ -85,6 +88,7 @@ func (m *memoryProvider) AppendRecords(_ context.Context, zone string, records [
 			}
 		}
 
+		rr.TTL = max(rr.TTL, m.minTTL)
 		m.zones[zone] = append(m.zones[zone], rr)
 	}
 

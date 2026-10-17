@@ -32,6 +32,8 @@ const (
 	flagProviderName        = "provider.name"
 	flagProviderConfig      = "provider.config"
 	flagProviderZones       = "provider.zones"
+	flagProviderDefaultTTL  = "provider.default-ttl"
+	flagProviderMinTTL      = "provider.min-ttl"
 	flagWebhookListen       = "webhook.listen"
 	flagWebhookReadTimeout  = "webhook.read-timeout"
 	flagWebhookWriteTimeout = "webhook.write-timeout"
@@ -123,6 +125,18 @@ func main() {
 				Required: true,
 				Sources:  flagAlternatives(flagProviderZones),
 			},
+			&cli.DurationFlag{
+				Name:    flagProviderDefaultTTL,
+				Usage:   "The TTL of records without TTL (no ttl annotation or recordTTL)",
+				Value:   time.Hour,
+				Sources: flagAlternatives(flagProviderDefaultTTL),
+			},
+			&cli.DurationFlag{
+				Name:    flagProviderMinTTL,
+				Usage:   "The minimum TTL accepted by the DNS provider, lower TTLs are raised to avoid endless updates",
+				Value:   0,
+				Sources: flagAlternatives(flagProviderMinTTL),
+			},
 			&cli.StringFlag{
 				Name:    flagWebhookListen,
 				Usage:   "The webhook server address to listen on (host:port)",
@@ -178,7 +192,10 @@ func main() {
 			}
 
 			server := webhook.New(
-				provider.New(cmd.StringSlice(flagProviderZones), libdnsProvider),
+				provider.New(cmd.StringSlice(flagProviderZones), libdnsProvider, provider.Options{
+					DefaultTTL: cmd.Duration(flagProviderDefaultTTL),
+					MinTTL:     cmd.Duration(flagProviderMinTTL),
+				}),
 				cmd.String(flagWebhookListen),
 				cmd.Duration(flagWebhookReadTimeout),
 				cmd.Duration(flagWebhookWriteTimeout),
